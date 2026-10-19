@@ -1,0 +1,23 @@
+title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
+swords:
+  "test_sword":
+    name: ""
+    lore:
+      - ""
+      - ""
+      - ""
+    material: DIAMOND_SWORD
+    effects:
+      - type: PARTICLE
+        particle_type: SOUL
+        multiplier: 1.0
+
+    abilities:
+      - type: EFFECT_RADIUS
+        effect: BLINDNESS
+
+      - type: LIGHTNING
+
+
+
+

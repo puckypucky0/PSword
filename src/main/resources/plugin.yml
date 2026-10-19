@@ -1,0 +1,11 @@
+name: PSword
+version: '${version}'
+main: dev.pucky.PSwordMain
+commands:
+  psword:
+    description: PSword ana komutu
+    permission: psword.use
+    usage: /psword <komut>
+    aliases: [ps]
+api-version: '1.21.4'
+load: POSTWORLD
