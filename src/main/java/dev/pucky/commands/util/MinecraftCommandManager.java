@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Tek bir kök komutun altındaki alt komutları yönetir: /pdungeon join, /pdungeon leave ...
+ * Tek bir kök komutun altındaki alt komutları yönetir: /psword join, /psword leave ...
  */
 public class MinecraftCommandManager implements CommandExecutor, TabCompleter {
 

@@ -38,7 +38,7 @@ public class Logger {
         logHistory.addFirst(new LogEntry(System.currentTimeMillis(), level, message));
         if (logHistory.size() > maxLogs) logHistory.removeLast();
 
-        log("<yellow>[PDungeon] " + level.color + "[" + level.label + "] <reset>" + message);
+        log("<yellow>[PSword] " + level.color + "[" + level.label + "] <reset>" + message);
     }
 
     public static void success(String message) {
