@@ -1,9 +1,11 @@
 package dev.pucky.sword.effect;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 
+@EqualsAndHashCode
 @Builder
 public class SwordEffect {
     public SwordEffectType effectType;
