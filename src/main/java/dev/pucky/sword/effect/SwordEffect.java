@@ -1,5 +1,6 @@
 package dev.pucky.sword.effect;
 
+import dev.pucky.sword.Trigger;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Particle;
@@ -9,6 +10,7 @@ import org.bukkit.Sound;
 @Builder
 public class SwordEffect {
     public SwordEffectType effectType;
+    public Trigger effectTrigger;
 
     // Particle
     public Particle particleType;

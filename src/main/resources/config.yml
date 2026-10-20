@@ -1,25 +1,29 @@
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 swords:
   "test_sword":
-    name: ""
+    name: "<b><rainbow>TEST SWORD"
     lore:
-      - ""
-      - ""
-      - ""
+      - "<red>Red"
+      - "<green>Green"
+      - "<blue>Blue"
     material: DIAMOND_SWORD
     effects:
       # Particles must be this type: https://minecraft.wiki/w/Particles
+      # Trigger should be one of these: ON_HIT_CRIT, ON_KILL, RIGHT_CLICK, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
       - type: PARTICLE
-        particle_type: SOUL
+        trigger: ON_HIT_CRIT
+        particle_type: soul
         multiplier: 1.0
 
-      # LIGHTNING effect type doesn't have any options.
+      # LIGHTNING effect type doesn't have any options, only needs a trigger just like any other effect type.
       - type: LIGHTNING
+        trigger: ON_KILL
 
       # Sounds must be this type: https://minecraft.wiki/w/Sounds.json/Java_Edition_values
       - type: SOUND
+        trigger: ON_HIT_CRIT
         sound: entity.player.levelup
         volume: 1.0
-        float: 2.0
+        pitch: 2.0
 
 

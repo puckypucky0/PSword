@@ -1,6 +1,7 @@
 package dev.pucky.config;
 
 import dev.pucky.sword.PSword;
+import dev.pucky.sword.Trigger;
 import dev.pucky.sword.effect.SwordEffect;
 import dev.pucky.sword.effect.SwordEffectType;
 import dev.pucky.util.MMUtil;
@@ -80,92 +81,107 @@ public final class ConfigManager {
                     effectType = SwordEffectType.valueOf(effectTypeKey);
                 } catch (IllegalArgumentException ignored) {}
 
-                SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder().effectType(effectType);
-                SwordEffect effect;
+                if (swordEffectMap.get("trigger") instanceof String effectTriggerKey) {
+                    Trigger effectTrigger = null;
 
-                switch (effectType) {
-                    case LIGHTNING -> effect = effectBuilder.build();
-                    case SOUND -> {
-                        boolean soundKeyCheck = swordEffectMap.get("sound") instanceof String soundKey
-                                && !soundKey.isEmpty()
-                                && NamespacedKey.fromString(soundKey) != null
-                                && Registry.SOUNDS.get(NamespacedKey.fromString(soundKey)) != null;
+                    try {
+                        effectTrigger = Trigger.valueOf(effectTriggerKey);
+                    } catch (IllegalArgumentException ignored) {}
 
-                        boolean volumeCheck = swordEffectMap.get("volume") instanceof Number volume
-                               && volume.doubleValue() > 0;
-
-
-                        boolean pitchCheck = swordEffectMap.get("pitch") instanceof Number pitch
-                                && pitch.doubleValue() > 0;
-
-
-                        if (!soundKeyCheck) {
-                            Logger.fail("<red>Sound key is malformed or missing. [" + swordID + "] Will use <white>entity.player.levelup for default.");
-                            effectBuilder = effectBuilder.sound(Sound.ENTITY_PLAYER_LEVELUP);
-                        } else {
-                            Sound soundKey = Registry.SOUNDS.get(NamespacedKey.fromString((String) swordEffectMap.get("sound")));
-
-                            effectBuilder = effectBuilder.sound(soundKey);
-                        }
-
-                        if (!volumeCheck) {
-                            Logger.fail("<red>Sound volume key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
-                            effectBuilder = effectBuilder.volume(1.0);
-                        } else {
-                            Number volumeKey = ((Number) swordEffectMap.get("volume")).doubleValue();
-
-                            effectBuilder = effectBuilder.volume(volumeKey.doubleValue());
-                        }
-
-                        if (!pitchCheck) {
-                            Logger.fail("<red>Sound pitch key is malformed or missing. [" + swordID + "]  Will use <white>1.0 for default.");
-                            effectBuilder = effectBuilder.pitch(1.0);
-                        } else {
-                            Number pitchKey = ((Number) swordEffectMap.get("pitch")).doubleValue();
-
-                            effectBuilder = effectBuilder.pitch(pitchKey.doubleValue());
-                        }
-
-                        effect = effectBuilder.build();
-                    }
-                    case PARTICLE -> {
-                        boolean particleKeyCheck = swordEffectMap.get("particle_type") instanceof String particleKey
-                                && !particleKey.isEmpty()
-                                && NamespacedKey.fromString(particleKey) != null
-                                && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)) != null
-                                && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class;
-
-                        boolean multiplierKeyCheck = swordEffectMap.get("multiplier") instanceof Number multiplier
-                                && multiplier.doubleValue() > 0;
-
-
-                        if (!particleKeyCheck) {
-                            Logger.fail("<red>Particle key is malformed, missing or <yellow>parameterized (dust, block or item). This version of PSword doesn't support parameterized particle types.  [" + swordID + "] Will use <white>flame for default.");
-                            effectBuilder = effectBuilder.particleType(Particle.FLAME);
-                        } else {
-                            Particle particle = Registry.PARTICLE_TYPE.get(NamespacedKey.fromString((String) swordEffectMap.get("particle_type")));
-
-                            effectBuilder = effectBuilder.particleType(particle);
-                        }
-
-                        if (!multiplierKeyCheck) {
-                            Logger.fail("<red>Particle multiplier key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
-                            effectBuilder = effectBuilder.particleMultiplier(1.0);
-                        } else {
-                            Number multiplierKey = ((Number) swordEffectMap.get("multiplier")).doubleValue();
-
-                            effectBuilder = effectBuilder.particleMultiplier(multiplierKey.doubleValue());
-                        }
-
-                        effect = effectBuilder.build();
-                    }
-                    case null -> {
-                        Logger.fatal("<dark_red>Sword effect key " + effectTypeKey + " is invalid for sword key " + swordID);
+                    if (effectTrigger == null) {
+                        Logger.fatal("<dark_red>Sword effect trigger key " + effectTriggerKey + " is invalid for sword key " + swordID);
                         continue;
                     }
-                }
 
-                effects.add(effect);
+                    SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder()
+                            .effectType(effectType)
+                            .effectTrigger(effectTrigger);
+
+                    SwordEffect effect;
+
+                    switch (effectType) {
+                        case LIGHTNING -> effect = effectBuilder.build();
+                        case SOUND -> {
+                            boolean soundKeyCheck = swordEffectMap.get("sound") instanceof String soundKey
+                                    && !soundKey.isEmpty()
+                                    && NamespacedKey.fromString(soundKey) != null
+                                    && Registry.SOUNDS.get(NamespacedKey.fromString(soundKey)) != null;
+
+                            boolean volumeCheck = swordEffectMap.get("volume") instanceof Number volume
+                                    && volume.doubleValue() > 0;
+
+
+                            boolean pitchCheck = swordEffectMap.get("pitch") instanceof Number pitch
+                                    && pitch.doubleValue() > 0;
+
+
+                            if (!soundKeyCheck) {
+                                Logger.fail("<red>Sound key is malformed or missing. [" + swordID + "] Will use <white>entity.player.levelup for default.");
+                                effectBuilder = effectBuilder.sound(Sound.ENTITY_PLAYER_LEVELUP);
+                            } else {
+                                Sound soundKey = Registry.SOUNDS.get(NamespacedKey.fromString((String) swordEffectMap.get("sound")));
+
+                                effectBuilder = effectBuilder.sound(soundKey);
+                            }
+
+                            if (!volumeCheck) {
+                                Logger.fail("<red>Sound volume key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
+                                effectBuilder = effectBuilder.volume(1.0);
+                            } else {
+                                Number volumeKey = ((Number) swordEffectMap.get("volume")).doubleValue();
+
+                                effectBuilder = effectBuilder.volume(volumeKey.doubleValue());
+                            }
+
+                            if (!pitchCheck) {
+                                Logger.fail("<red>Sound pitch key is malformed or missing. [" + swordID + "]  Will use <white>1.0 for default.");
+                                effectBuilder = effectBuilder.pitch(1.0);
+                            } else {
+                                Number pitchKey = ((Number) swordEffectMap.get("pitch")).doubleValue();
+
+                                effectBuilder = effectBuilder.pitch(pitchKey.doubleValue());
+                            }
+
+                            effect = effectBuilder.build();
+                        }
+                        case PARTICLE -> {
+                            boolean particleKeyCheck = swordEffectMap.get("particle_type") instanceof String particleKey
+                                    && !particleKey.isEmpty()
+                                    && NamespacedKey.fromString(particleKey) != null
+                                    && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)) != null
+                                    && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class;
+
+                            boolean multiplierKeyCheck = swordEffectMap.get("multiplier") instanceof Number multiplier
+                                    && multiplier.doubleValue() > 0;
+
+
+                            if (!particleKeyCheck) {
+                                Logger.fail("<red>Particle key is malformed, missing or <yellow>parameterized (dust, block or item). This version of PSword doesn't support parameterized particle types.  [" + swordID + "] Will use <white>flame for default.");
+                                effectBuilder = effectBuilder.particleType(Particle.FLAME);
+                            } else {
+                                Particle particle = Registry.PARTICLE_TYPE.get(NamespacedKey.fromString((String) swordEffectMap.get("particle_type")));
+
+                                effectBuilder = effectBuilder.particleType(particle);
+                            }
+
+                            if (!multiplierKeyCheck) {
+                                Logger.fail("<red>Particle multiplier key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
+                                effectBuilder = effectBuilder.particleMultiplier(1.0);
+                            } else {
+                                Number multiplierKey = ((Number) swordEffectMap.get("multiplier")).doubleValue();
+
+                                effectBuilder = effectBuilder.particleMultiplier(multiplierKey.doubleValue());
+                            }
+
+                            effect = effectBuilder.build();
+                        }
+                        case null -> {
+                            Logger.fatal("<dark_red>Sword effect key " + effectTypeKey + " is invalid for sword key " + swordID);
+                            continue;
+                        }
+                    }
+                    effects.add(effect);
+                } else Logger.fatal("<dark_red>No sword effect trigger specified for sword " + swordID);
             } else Logger.fatal("<dark_red>No sword effect type specified for sword " + swordID);
         }
         return effects;
