@@ -1,4 +1,12 @@
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
+
+settings:
+  particleOffsetX: 0.3
+  particleOffsetY: 0.6
+  particleOffsetZ: 0.3
+  particleOffsetExtra: 0.02
+  effectShowOnPlayersOnly: true
+
 swords:
   "test_sword":
     name: "<b><rainbow>TEST SWORD"
@@ -9,7 +17,7 @@ swords:
     material: DIAMOND_SWORD
     effects:
       # Particles must be this type: https://minecraft.wiki/w/Particles
-      # Trigger should be one of these: ON_HIT_CRIT, ON_KILL, RIGHT_CLICK, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
+      # Trigger should be one of these: ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
       - type: PARTICLE
         trigger: ON_HIT_CRIT
         particle_type: soul

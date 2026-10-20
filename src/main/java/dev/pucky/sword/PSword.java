@@ -3,6 +3,8 @@ package dev.pucky.sword;
 import dev.pucky.PSwordMain;
 import dev.pucky.sword.effect.SwordEffect;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -14,14 +16,14 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.List;
 import java.util.Set;
 
-@Builder
+@Builder @Getter @Accessors(fluent = true)
 public class PSword {
-    public String swordID;
-    public Component name;
-    public List<Component> lore;
-    public Material itemType;
-//    public Set<SwordAbility> swordAbilities;
-    public Set<SwordEffect> swordEffects;
+    private String swordID;
+    private Component name;
+    private List<Component> lore;
+    private Material itemType;
+//    private Set<SwordAbility> swordAbilities;
+    private Set<SwordEffect> swordEffects;
 
 
     public ItemStack swordItem() {

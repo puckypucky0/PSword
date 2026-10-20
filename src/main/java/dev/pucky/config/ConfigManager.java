@@ -13,13 +13,18 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
-
+@Getter
 public final class ConfigManager {
 
     private final JavaPlugin plugin;
 
-    @Getter
     private final Map<String, Sword> swords = new LinkedHashMap<>();
+
+    private double particleOffsetX = 0.0;
+    private double particleOffsetY = 0.0;
+    private double particleOffsetZ = 0.0;
+    private double particleOffsetExtra = 0.0;
+    private boolean effectShowOnPlayersOnly = true;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -28,6 +33,32 @@ public final class ConfigManager {
     public void load() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
+
+        particleOffsetX = plugin.getConfig().getDouble("settings.particleOffsetX");
+        particleOffsetY = plugin.getConfig().getDouble("settings.particleOffsetY");
+        particleOffsetZ = plugin.getConfig().getDouble("settings.particleOffsetZ");
+        particleOffsetExtra = plugin.getConfig().getDouble("settings.particleOffsetExtra");
+        effectShowOnPlayersOnly = plugin.getConfig().getBoolean("settings.effectShowOnPlayersOnly");
+
+        if (particleOffsetX == 0.0) {
+            Logger.fatal("<red>Particle X offset isn't set or invalid. Defaulting to 0.3");
+            particleOffsetX = 0.3;
+        }
+
+        if (particleOffsetY == 0.0) {
+            Logger.fatal("<red>Particle Y offset isn't set or invalid. Defaulting to 0.8");
+            particleOffsetX = 0.8;
+        }
+
+        if (particleOffsetZ == 0.0) {
+            Logger.fatal("<red>Particle Z offset isn't set or invalid. Defaulting to 0.3");
+            particleOffsetX = 0.3;
+        }
+
+        if (particleOffsetExtra == 0.02) {
+            Logger.fatal("<red>Particle extra offset isn't set or invalid. Defaulting to 0.02");
+            particleOffsetExtra = 0.02;
+        }
 
         swords.clear();
         loadSwords();
