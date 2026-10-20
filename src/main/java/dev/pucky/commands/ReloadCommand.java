@@ -29,7 +29,7 @@ public class ReloadCommand implements MinecraftCommand {
         }
 
         sender.sendMessage(MMUtil.formatColorsPrefixed(
-                "<s>Konfigürasyon yeniden yüklendi. <v>" + configManager.getSwords().size() + "yüklendi."
+                "<s>Konfigürasyon yeniden yüklendi. <v>" + configManager.getSwords().size() + " kılıç yüklendi."
         ));
     }
 
