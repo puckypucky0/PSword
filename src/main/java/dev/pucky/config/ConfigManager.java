@@ -1,12 +1,13 @@
 package dev.pucky.config;
 
 import dev.pucky.sword.PSword;
+import dev.pucky.sword.effect.SwordEffect;
+import dev.pucky.sword.effect.SwordEffectType;
 import dev.pucky.util.MMUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -51,59 +52,124 @@ public final class ConfigManager {
             }
 
             Material swordMaterial = Material.matchMaterial(swordMaterialString);
-            if (swordMaterial == null) {
-                warn("<yellow>Provided sword material (" + swordMaterialString + ") for sword ID " + swordID + " is <red>invalid. Will use IRON_SWORD for default.");
+            if (swordMaterial == null || !swordMaterial.isItem()) {
+                warn("<yellow>Provided sword material (" + swordMaterialString + ") for sword ID " + swordID + " is <red>invalid or AIR. Will use IRON_SWORD for default.");
                 swordMaterial = Material.IRON_SWORD;
             }
 
             swords.put(swordID, new Sword(
                     PSword.builder()
+                            .swordID(swordID)
                             .name(swordName)
                             .lore(swordLore)
+                            .swordEffects(this.loadEffects(swordID, perSwordSection.getMapList("effects")))
                             .itemType(swordMaterial)
                             .build()
             ));
         }
     }
 
-//    private List<SwordAbility> loadAbilities(List<Map<?, ?>> list) {
-//        List<SwordAbility> abilities = new ArrayList<>();
-//
-//        for (Map<?, ?> lootDataMap : list) {
-//            boolean itemCheck = lootDataMap.get("item") instanceof String;
-//            boolean chanceCheck = lootDataMap.get("chance") instanceof Number;
-//            boolean minCheck = lootDataMap.get("min") instanceof Integer;
-//            boolean maxCheck = lootDataMap.get("max") instanceof Integer;
-//            boolean check = itemCheck && chanceCheck && minCheck && maxCheck;
-//
-//            if (check) {
-//
-//                String itemBase64 = (String) lootDataMap.get("item");
-//                double chance = ((Number) lootDataMap.get("chance")).doubleValue();
-//                int min = (int) lootDataMap.get("min");
-//                int max = (int) lootDataMap.get("max");
-//
-//                ItemStack itemStack = null;
-//                try {
-//                    itemStack = CommandUtils.decode(itemBase64);
-//                } catch (Exception e) {
-//                    Logger.fail("<gray>Loot base64'ü <red>çözülemedi");
-//                }
-//
-//                if (itemStack != null) {
-//                    lootEntries.add(
-//                            new LootEntry(
-//                                    itemStack,
-//                                    chance,
-//                                    min,
-//                                    max
-//                            )
-//                    );
-//                }
-//            }
-//        }
-//        return lootEntries;
-//    }
+    private Set<SwordEffect> loadEffects(String swordID, List<Map<?, ?>> list) {
+        Set<SwordEffect> effects = new HashSet<>();
+
+        for (Map<?, ?> swordEffectMap : list) {
+            if (swordEffectMap.get("type") instanceof String effectTypeKey) {
+                SwordEffectType effectType = null;
+
+                try {
+                    effectType = SwordEffectType.valueOf(effectTypeKey);
+                } catch (IllegalArgumentException ignored) {}
+
+                SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder().effectType(effectType);
+                SwordEffect effect;
+
+                switch (effectType) {
+                    case LIGHTNING -> effect = effectBuilder.build();
+                    case SOUND -> {
+                        boolean soundKeyCheck = swordEffectMap.get("sound") instanceof String soundKey
+                                && !soundKey.isEmpty()
+                                && NamespacedKey.fromString(soundKey) != null
+                                && Registry.SOUNDS.get(NamespacedKey.fromString(soundKey)) != null;
+
+                        boolean volumeCheck = swordEffectMap.get("volume") instanceof Number volume
+                               && volume.doubleValue() > 0;
+
+
+                        boolean pitchCheck = swordEffectMap.get("pitch") instanceof Number pitch
+                                && pitch.doubleValue() > 0;
+
+
+                        if (!soundKeyCheck) {
+                            Logger.fail("<red>Sound key is malformed or missing. [" + swordID + "] Will use <white>entity.player.levelup for default.");
+                            effectBuilder = effectBuilder.sound(Sound.ENTITY_PLAYER_LEVELUP);
+                        } else {
+                            Sound soundKey = Registry.SOUNDS.get(NamespacedKey.fromString((String) swordEffectMap.get("sound")));
+
+                            effectBuilder = effectBuilder.sound(soundKey);
+                        }
+
+                        if (!volumeCheck) {
+                            Logger.fail("<red>Sound volume key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
+                            effectBuilder = effectBuilder.volume(1.0);
+                        } else {
+                            Number volumeKey = ((Number) swordEffectMap.get("volume")).doubleValue();
+
+                            effectBuilder = effectBuilder.volume(volumeKey.doubleValue());
+                        }
+
+                        if (!pitchCheck) {
+                            Logger.fail("<red>Sound pitch key is malformed or missing. [" + swordID + "]  Will use <white>1.0 for default.");
+                            effectBuilder = effectBuilder.pitch(1.0);
+                        } else {
+                            Number pitchKey = ((Number) swordEffectMap.get("pitch")).doubleValue();
+
+                            effectBuilder = effectBuilder.pitch(pitchKey.doubleValue());
+                        }
+
+                        effect = effectBuilder.build();
+                    }
+                    case PARTICLE -> {
+                        boolean particleKeyCheck = swordEffectMap.get("particle_type") instanceof String particleKey
+                                && !particleKey.isEmpty()
+                                && NamespacedKey.fromString(particleKey) != null
+                                && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)) != null
+                                && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class;
+
+                        boolean multiplierKeyCheck = swordEffectMap.get("multiplier") instanceof Number multiplier
+                                && multiplier.doubleValue() > 0;
+
+
+                        if (!particleKeyCheck) {
+                            Logger.fail("<red>Particle key is malformed, missing or <yellow>parameterized (dust, block or item). This version of PSword doesn't support parameterized particle types.  [" + swordID + "] Will use <white>flame for default.");
+                            effectBuilder = effectBuilder.particleType(Particle.FLAME);
+                        } else {
+                            Particle particle = Registry.PARTICLE_TYPE.get(NamespacedKey.fromString((String) swordEffectMap.get("particle_type")));
+
+                            effectBuilder = effectBuilder.particleType(particle);
+                        }
+
+                        if (!multiplierKeyCheck) {
+                            Logger.fail("<red>Particle multiplier key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
+                            effectBuilder = effectBuilder.particleMultiplier(1.0);
+                        } else {
+                            Number multiplierKey = ((Number) swordEffectMap.get("multiplier")).doubleValue();
+
+                            effectBuilder = effectBuilder.particleMultiplier(multiplierKey.doubleValue());
+                        }
+
+                        effect = effectBuilder.build();
+                    }
+                    case null -> {
+                        Logger.fatal("<dark_red>Sword effect key " + effectTypeKey + " is invalid for sword key " + swordID);
+                        continue;
+                    }
+                }
+
+                effects.add(effect);
+            } else Logger.fatal("<dark_red>No sword effect type specified for sword " + swordID);
+        }
+        return effects;
+    }
 
 
     public record Sword(PSword swordInstance) {
