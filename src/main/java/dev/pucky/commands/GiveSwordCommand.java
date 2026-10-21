@@ -30,23 +30,24 @@ public class GiveSwordCommand implements MinecraftCommand {
             return;
         }
 
-        PSword sword = configManager.getSword(args[0]).swordInstance();
+        ConfigManager.Sword sword = configManager.getSword(args[0]);
         if (sword == null) {
             player.sendMessage(MMUtil.formatColorsPrefixed(
                     "<f>Geçersiz kılıç ID'si."
             ));
             return;
         }
+        PSword pSword = sword.swordInstance();
 
         player.sendMessage(MMUtil.formatColorsPrefixed(
                 "<s>Eşya envanterinize eklendi veya yere düştü."
         ));
         player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1.3f);
 
-        if (PlayerUtil.itemCanFit(player, sword.swordItem()))
-            player.getInventory().addItem(sword.swordItem());
+        if (PlayerUtil.itemCanFit(player, pSword.swordItem()))
+            player.getInventory().addItem(pSword.swordItem());
 
-        else player.getWorld().dropItemNaturally(player.getLocation().add(0, 3, 0), sword.swordItem());
+        else player.getWorld().dropItemNaturally(player.getLocation().add(0, 3, 0), pSword.swordItem());
     }
 
     @Override
