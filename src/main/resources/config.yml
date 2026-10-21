@@ -1,10 +1,15 @@
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 
 settings:
-  particleOffsetX: 0.3
-  particleOffsetY: 0.6
-  particleOffsetZ: 0.3
-  particleOffsetExtra: 0.02
+  particleOffsetX: 0.6
+  particleOffsetY: 0.3
+  particleOffsetZ: 0.6
+  # How much should particles spill in X, Y and Z angles.
+
+  particleOffsetExtra: 0.2
+  # How speedy should particles be in every angle.
+
+  # Change these settings and run /ps reload to see the effects in-game
   effectShowOnPlayersOnly: true
 
 swords:
@@ -30,8 +35,8 @@ swords:
       # Sounds must be this type: https://minecraft.wiki/w/Sounds.json/Java_Edition_values
       - type: SOUND
         trigger: ON_HIT_CRIT
-        sound: entity.player.levelup
+        sound: block.trial_spawner.eject_item
         volume: 1.0
-        pitch: 2.0
+        pitch: 0.5
 
 
