@@ -1,5 +1,6 @@
 package dev.pucky.commands;
 
+import dev.pucky.PSwordMain;
 import dev.pucky.commands.util.MinecraftCommand;
 import dev.pucky.commands.util.MinecraftCommandMetadata;
 import dev.pucky.config.ConfigManager;
@@ -31,6 +32,7 @@ public class ReloadCommand implements MinecraftCommand {
         sender.sendMessage(MMUtil.formatColorsPrefixed(
                 "<s>Konfigürasyon yeniden yüklendi. <v>" + configManager.getSwords().size() + " kılıç yüklendi."
         ));
+        PSwordMain.instance.getAbilityListener().getCooldowns().clear();
     }
 
     @Override

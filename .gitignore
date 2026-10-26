@@ -111,3 +111,10 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Local AI agent notes
+BRAIN.md
+CLAUDE.md
+
+modrinth-description.txt
+test-config.yml

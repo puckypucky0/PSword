@@ -2,17 +2,21 @@ package dev.pucky.config;
 
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.Trigger;
+import dev.pucky.sword.ability.SwordAbility;
+import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.sword.effect.SwordEffect;
 import dev.pucky.sword.effect.SwordEffectType;
+import dev.pucky.util.CheckUtil;
 import dev.pucky.util.MMUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
-import org.bukkit.*;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
+
 @Getter
 public final class ConfigManager {
 
@@ -25,6 +29,7 @@ public final class ConfigManager {
     private double particleOffsetZ = 0.0;
     private double particleOffsetExtra = 0.0;
     private boolean effectShowOnPlayersOnly = true;
+    private boolean abilitiesFireOnPlayersOnly = true;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -34,31 +39,12 @@ public final class ConfigManager {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
 
-        particleOffsetX = plugin.getConfig().getDouble("settings.particleOffsetX");
-        particleOffsetY = plugin.getConfig().getDouble("settings.particleOffsetY");
-        particleOffsetZ = plugin.getConfig().getDouble("settings.particleOffsetZ");
-        particleOffsetExtra = plugin.getConfig().getDouble("settings.particleOffsetExtra");
-        effectShowOnPlayersOnly = plugin.getConfig().getBoolean("settings.effectShowOnPlayersOnly");
-
-        if (particleOffsetX == 0.0) {
-            Logger.fatal("<red>Particle X offset isn't set or invalid. Defaulting to 0.3");
-            particleOffsetX = 0.3;
-        }
-
-        if (particleOffsetY == 0.0) {
-            Logger.fatal("<red>Particle Y offset isn't set or invalid. Defaulting to 0.8");
-            particleOffsetX = 0.8;
-        }
-
-        if (particleOffsetZ == 0.0) {
-            Logger.fatal("<red>Particle Z offset isn't set or invalid. Defaulting to 0.3");
-            particleOffsetX = 0.3;
-        }
-
-        if (particleOffsetExtra == 0.02) {
-            Logger.fatal("<red>Particle extra offset isn't set or invalid. Defaulting to 0.02");
-            particleOffsetExtra = 0.02;
-        }
+        particleOffsetX = plugin.getConfig().getDouble("settings.particleOffsetX", 0.3);
+        particleOffsetY = plugin.getConfig().getDouble("settings.particleOffsetY", 0.8);
+        particleOffsetZ = plugin.getConfig().getDouble("settings.particleOffsetZ", 0.3);
+        particleOffsetExtra = plugin.getConfig().getDouble("settings.particleOffsetExtra", 0.02);
+        effectShowOnPlayersOnly = plugin.getConfig().getBoolean("settings.effectShowOnPlayersOnly", true);
+        abilitiesFireOnPlayersOnly = plugin.getConfig().getBoolean("settings.abilitiesFireOnPlayersOnly", true);
 
         swords.clear();
         loadSwords();
@@ -94,128 +80,119 @@ public final class ConfigManager {
                             .swordID(swordID)
                             .name(swordName)
                             .lore(swordLore)
-                            .swordEffects(this.loadEffects(swordID, perSwordSection.getMapList("effects")))
+                            .swordEffects(this.loadEffects(swordID, perSwordSection))
+                            .swordAbilities(this.loadAbilities(swordID, perSwordSection))
                             .itemType(swordMaterial)
                             .build()
             ));
         }
     }
 
-    private Set<SwordEffect> loadEffects(String swordID, List<Map<?, ?>> list) {
+    private Set<SwordEffect> loadEffects(String swordID, ConfigurationSection section) {
         Set<SwordEffect> effects = new HashSet<>();
+        List<Map<?, ?>> list = section.getMapList("effects");
 
         for (Map<?, ?> swordEffectMap : list) {
-            if (swordEffectMap.get("type") instanceof String effectTypeKey) {
-                SwordEffectType effectType = null;
+            SwordEffectType effectType = CheckUtil.validSwordEffectType(swordEffectMap.get("type"));
+            if (effectType == null)
+                continue;
 
-                try {
-                    effectType = SwordEffectType.valueOf(effectTypeKey);
-                } catch (IllegalArgumentException ignored) {}
+            Trigger effectTrigger = CheckUtil.validTriggerType(swordEffectMap.get("trigger"));
+            if (effectTrigger == null)
+                continue;
 
-                if (swordEffectMap.get("trigger") instanceof String effectTriggerKey) {
-                    Trigger effectTrigger = null;
+            SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder()
+                    .effectType(effectType)
+                    .effectTrigger(effectTrigger);
 
-                    try {
-                        effectTrigger = Trigger.valueOf(effectTriggerKey);
-                    } catch (IllegalArgumentException ignored) {}
+            SwordEffect effect = null;
 
-                    if (effectTrigger == null) {
-                        Logger.fatal("<dark_red>Sword effect trigger key " + effectTriggerKey + " is invalid for sword key " + swordID);
-                        continue;
-                    }
+            switch (effectType) {
+                case LIGHTNING -> effect = effectBuilder.build();
+                case SOUND -> {
+                    effectBuilder = effectBuilder.sound(
+                            CheckUtil.soundVal(swordID, swordEffectMap, "entity.player.levelup")
+                    );
 
-                    SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder()
-                            .effectType(effectType)
-                            .effectTrigger(effectTrigger);
+                    effectBuilder = effectBuilder.volume(
+                            CheckUtil.doubleVal(swordID, "Sword effect volume value", swordEffectMap.get("volume"), 1.0)
+                    );
 
-                    SwordEffect effect;
+                    effectBuilder = effectBuilder.pitch(
+                            CheckUtil.doubleVal(swordID, "Sword effect pitch value", swordEffectMap.get("pitch"), 1.0)
+                    );
+                    effect = effectBuilder.build();
+                }
+                case PARTICLE -> {
+                    effectBuilder = effectBuilder.particleType(
+                            CheckUtil.particleVal(swordID, swordEffectMap, "flame")
+                    );
 
-                    switch (effectType) {
-                        case LIGHTNING -> effect = effectBuilder.build();
-                        case SOUND -> {
-                            boolean soundKeyCheck = swordEffectMap.get("sound") instanceof String soundKey
-                                    && !soundKey.isEmpty()
-                                    && NamespacedKey.fromString(soundKey) != null
-                                    && Registry.SOUNDS.get(NamespacedKey.fromString(soundKey)) != null;
+                    effectBuilder = effectBuilder.particleMultiplier(
+                            CheckUtil.doubleVal(swordID, "Sword effect particle multiplier value", swordEffectMap.get("multiplier"), 1.0)
+                    );
 
-                            boolean volumeCheck = swordEffectMap.get("volume") instanceof Number volume
-                                    && volume.doubleValue() > 0;
+                    effect = effectBuilder.build();
+                }
+            }
 
-
-                            boolean pitchCheck = swordEffectMap.get("pitch") instanceof Number pitch
-                                    && pitch.doubleValue() > 0;
-
-
-                            if (!soundKeyCheck) {
-                                Logger.fail("<red>Sound key is malformed or missing. [" + swordID + "] Will use <white>entity.player.levelup for default.");
-                                effectBuilder = effectBuilder.sound(Sound.ENTITY_PLAYER_LEVELUP);
-                            } else {
-                                Sound soundKey = Registry.SOUNDS.get(NamespacedKey.fromString((String) swordEffectMap.get("sound")));
-
-                                effectBuilder = effectBuilder.sound(soundKey);
-                            }
-
-                            if (!volumeCheck) {
-                                Logger.fail("<red>Sound volume key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
-                                effectBuilder = effectBuilder.volume(1.0);
-                            } else {
-                                Number volumeKey = ((Number) swordEffectMap.get("volume")).doubleValue();
-
-                                effectBuilder = effectBuilder.volume(volumeKey.doubleValue());
-                            }
-
-                            if (!pitchCheck) {
-                                Logger.fail("<red>Sound pitch key is malformed or missing. [" + swordID + "]  Will use <white>1.0 for default.");
-                                effectBuilder = effectBuilder.pitch(1.0);
-                            } else {
-                                Number pitchKey = ((Number) swordEffectMap.get("pitch")).doubleValue();
-
-                                effectBuilder = effectBuilder.pitch(pitchKey.doubleValue());
-                            }
-
-                            effect = effectBuilder.build();
-                        }
-                        case PARTICLE -> {
-                            boolean particleKeyCheck = swordEffectMap.get("particle_type") instanceof String particleKey
-                                    && !particleKey.isEmpty()
-                                    && NamespacedKey.fromString(particleKey) != null
-                                    && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)) != null
-                                    && Registry.PARTICLE_TYPE.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class;
-
-                            boolean multiplierKeyCheck = swordEffectMap.get("multiplier") instanceof Number multiplier
-                                    && multiplier.doubleValue() > 0;
-
-
-                            if (!particleKeyCheck) {
-                                Logger.fail("<red>Particle key is malformed, missing or <yellow>parameterized (dust, block or item). This version of PSword doesn't support parameterized particle types.  [" + swordID + "] Will use <white>flame for default.");
-                                effectBuilder = effectBuilder.particleType(Particle.FLAME);
-                            } else {
-                                Particle particle = Registry.PARTICLE_TYPE.get(NamespacedKey.fromString((String) swordEffectMap.get("particle_type")));
-
-                                effectBuilder = effectBuilder.particleType(particle);
-                            }
-
-                            if (!multiplierKeyCheck) {
-                                Logger.fail("<red>Particle multiplier key is malformed or missing. [" + swordID + "] Will use <white>1.0 for default.");
-                                effectBuilder = effectBuilder.particleMultiplier(1.0);
-                            } else {
-                                Number multiplierKey = ((Number) swordEffectMap.get("multiplier")).doubleValue();
-
-                                effectBuilder = effectBuilder.particleMultiplier(multiplierKey.doubleValue());
-                            }
-
-                            effect = effectBuilder.build();
-                        }
-                        case null -> {
-                            Logger.fatal("<dark_red>Sword effect key " + effectTypeKey + " is invalid for sword key " + swordID);
-                            continue;
-                        }
-                    }
-                    effects.add(effect);
-                } else Logger.fatal("<dark_red>No sword effect trigger specified for sword " + swordID);
-            } else Logger.fatal("<dark_red>No sword effect type specified for sword " + swordID);
+            effects.add(effect);
         }
         return effects;
+    }
+
+    private Set<SwordAbility> loadAbilities(String swordID, ConfigurationSection section) {
+        Set<SwordAbility> abilities = new HashSet<>();
+        List<Map<?, ?>> list = section.getMapList("abilities");
+
+        for (Map<?, ?> swordAbilityMap : list) {
+            SwordAbilityType abilityType = CheckUtil.validSwordAbilityType(swordAbilityMap.get("type"));
+            if (abilityType == null)
+                continue;
+
+            Trigger abilityTrigger = CheckUtil.validTriggerType(swordAbilityMap.get("trigger"));
+            if (abilityTrigger == null)
+                continue;
+
+            int abilityCooldown = CheckUtil.intVal(swordID, "Sword ability - cooldown", swordAbilityMap.get("cooldown_millis"), 15 * 1000);
+
+            String abilityName = CheckUtil.stringVal("Sword ability - name", swordAbilityMap.get("name"));
+            if (abilityName == null)
+                continue;
+
+            SwordAbility.SwordAbilityBuilder abilityBuilder = SwordAbility.builder()
+                    .abilityName(MMUtil.deserialize(abilityName))
+                    .abilityType(abilityType)
+                    .abilityTrigger(abilityTrigger)
+                    .cooldownMillis(abilityCooldown);
+
+            SwordAbility ability;
+
+            switch (abilityType) {
+                case EFFECT_SINGLE, EFFECT_RADIUS -> {
+                    abilityBuilder = abilityBuilder.enemyEffect(
+                            CheckUtil.validPotionEffect(swordID, swordAbilityMap)
+                    );
+
+                    abilityBuilder.enemyEffectRadius(
+                        abilityType == SwordAbilityType.EFFECT_RADIUS ?
+                                CheckUtil.intVal(swordID, "Sword ability - effect radius value", swordAbilityMap.get("radius"), 5) :
+                                null
+                    );
+                }
+
+                case EFFECT_SELF -> abilityBuilder = abilityBuilder.selfEffect(
+                        CheckUtil.validPotionEffect(swordID, swordAbilityMap)
+                );
+
+                case LIGHTNING_BOLT -> abilityBuilder = abilityBuilder.lightningDamage(
+                        CheckUtil.doubleVal(swordID, "Sword ability - ligtning bolt damage value", swordAbilityMap.get("lightning_damage"), 5.0)
+                );
+            }
+            ability = abilityBuilder.build();
+            abilities.add(ability);
+        }
+        return abilities;
     }
 
 

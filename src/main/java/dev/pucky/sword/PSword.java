@@ -1,6 +1,7 @@
 package dev.pucky.sword;
 
 import dev.pucky.PSwordMain;
+import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.sword.effect.SwordEffect;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,7 +23,7 @@ public class PSword {
     private Component name;
     private List<Component> lore;
     private Material itemType;
-//    private Set<SwordAbility> swordAbilities;
+    private Set<SwordAbility> swordAbilities;
     private Set<SwordEffect> swordEffects;
 
 

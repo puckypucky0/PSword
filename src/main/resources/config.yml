@@ -11,6 +11,7 @@ settings:
 
   # Change these settings and run /ps reload to see the effects in-game
   effectShowOnPlayersOnly: true
+  abilitiesFireOnPlayersOnly: true
 
 swords:
   "test_sword":
@@ -38,5 +39,44 @@ swords:
         sound: block.trial_spawner.eject_item
         volume: 1.0
         pitch: 0.5
+    abilities:
+      # EFFECT_SELF,
+      #    EFFECT_SINGLE,
+      #    EFFECT_RADIUS,
+      #    LIGHTNING_BOLT,
+      #    LIFE_STEAL,
+      #    DASH,
+      #    BLINK
+      - type: EFFECT_SELF
+        name: "Test Effect #1"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 1500
+        effect_type: slowness
+        duration_seconds: 30
+        level: 2
+
+      - type: EFFECT_SINGLE
+        name: "Test Effect #2"
+        trigger: ON_DAMAGE_DEAL
+        cooldown_millis: 1500
+        effect_type: blindness
+        duration_seconds: 30
+        level: 1
+
+      - type: EFFECT_RADIUS
+        name: "Test Effect #3"
+        trigger: ON_DAMAGE_DEAL
+        cooldown_millis: 1500
+        effect_type: levitation
+        duration_seconds: 5
+        level: 1
+
+      - type: LIGHTNING_BOLT
+        name: "Test Effect #4"
+        trigger: ON_DAMAGE_DEAL
+        cooldown_millis: 1500
+        lightning_damage: 5.0 # 1 heart: 2 damage.
+
+
 
 

@@ -7,6 +7,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class MMUtil {
 
@@ -51,6 +52,18 @@ public class MMUtil {
 
         return components;
     }
+
+    public static String stripLegacy(String text) {
+        if (text == null) return null;
+
+        return LEGACY_CODES.matcher(text).replaceAll("");
+    }
+
+    private static final Pattern LEGACY_CODES = Pattern.compile(
+            "(?i)[&§]x(?:[&§][0-9a-f]){6}"   // §x§F§F§A§A§0§0
+            + "|[&§]#[0-9a-f]{6}"            // &#FFAA00
+            + "|[&§][0-9a-fk-or]"            // &a, §l, &r
+    );
 
     public static String serialize(Component component) {
         return miniMessage.serialize(component);

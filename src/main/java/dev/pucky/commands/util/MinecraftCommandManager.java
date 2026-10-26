@@ -4,23 +4,11 @@ import dev.pucky.commands.util.tab.TabCompleteEntry;
 import dev.pucky.commands.util.tab.TabcompleteContext;
 import dev.pucky.util.MMUtil;
 import dev.pucky.util.logs.Logger;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.command.TabCompleter;
+import org.bukkit.command.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Tek bir kök komutun altındaki alt komutları yönetir: /psword join, /psword leave ...

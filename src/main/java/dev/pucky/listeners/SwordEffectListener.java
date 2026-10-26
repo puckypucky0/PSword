@@ -19,10 +19,10 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Objects;
 
-public class PSwordListener implements Listener {
+public class SwordEffectListener implements Listener {
     public ConfigManager configManager;
 
-    public PSwordListener(ConfigManager configManager) {
+    public SwordEffectListener(ConfigManager configManager) {
         this.configManager = configManager;
     }
 
