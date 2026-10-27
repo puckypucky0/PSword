@@ -49,7 +49,7 @@ public final class ConfigManager {
         swords.clear();
         loadSwords();
 
-        plugin.getLogger().info(swords.size() + " kılıç yüklendi.");
+        Logger.inform(swords.size() + " kılıç yüklendi.");
     }
 
     private void loadSwords() {
@@ -65,7 +65,7 @@ public final class ConfigManager {
 
             String swordMaterialString = perSwordSection.getString("material");
             if (swordMaterialString == null) {
-                warn("<yellow>Sword material isn't set for sword " + swordID + ". Defaulting to IRON.");
+                warn("<yellow>Sword material isn't set for sword " + swordID + ". Defaulting to IRON_SWORD.");
                 swordMaterialString = "IRON_SWORD";
             }
 
@@ -93,11 +93,11 @@ public final class ConfigManager {
         List<Map<?, ?>> list = section.getMapList("effects");
 
         for (Map<?, ?> swordEffectMap : list) {
-            SwordEffectType effectType = CheckUtil.validSwordEffectType(swordEffectMap.get("type"));
+            SwordEffectType effectType = CheckUtil.validSwordEffectType(swordID, swordEffectMap.get("type"));
             if (effectType == null)
                 continue;
 
-            Trigger effectTrigger = CheckUtil.validTriggerType(swordEffectMap.get("trigger"));
+            Trigger effectTrigger = CheckUtil.validTriggerType(swordEffectMap.get("trigger"), swordID);
             if (effectTrigger == null)
                 continue;
 
@@ -105,10 +105,10 @@ public final class ConfigManager {
                     .effectType(effectType)
                     .effectTrigger(effectTrigger);
 
-            SwordEffect effect = null;
-
             switch (effectType) {
-                case LIGHTNING -> effect = effectBuilder.build();
+                case LIGHTNING -> {
+                    // Since lightning effect has no options, it will be skipped.
+                }
                 case SOUND -> {
                     effectBuilder = effectBuilder.sound(
                             CheckUtil.soundVal(swordID, swordEffectMap, "entity.player.levelup")
@@ -121,7 +121,6 @@ public final class ConfigManager {
                     effectBuilder = effectBuilder.pitch(
                             CheckUtil.doubleVal(swordID, "Sword effect pitch value", swordEffectMap.get("pitch"), 1.0)
                     );
-                    effect = effectBuilder.build();
                 }
                 case PARTICLE -> {
                     effectBuilder = effectBuilder.particleType(
@@ -131,12 +130,10 @@ public final class ConfigManager {
                     effectBuilder = effectBuilder.particleMultiplier(
                             CheckUtil.doubleVal(swordID, "Sword effect particle multiplier value", swordEffectMap.get("multiplier"), 1.0)
                     );
-
-                    effect = effectBuilder.build();
                 }
             }
 
-            effects.add(effect);
+            effects.add(effectBuilder.build());
         }
         return effects;
     }
@@ -146,11 +143,11 @@ public final class ConfigManager {
         List<Map<?, ?>> list = section.getMapList("abilities");
 
         for (Map<?, ?> swordAbilityMap : list) {
-            SwordAbilityType abilityType = CheckUtil.validSwordAbilityType(swordAbilityMap.get("type"));
+            SwordAbilityType abilityType = CheckUtil.validSwordAbilityType(swordID, swordAbilityMap.get("type"));
             if (abilityType == null)
                 continue;
 
-            Trigger abilityTrigger = CheckUtil.validTriggerType(swordAbilityMap.get("trigger"));
+            Trigger abilityTrigger = CheckUtil.validTriggerType(swordAbilityMap.get("trigger"), swordID);
             if (abilityTrigger == null)
                 continue;
 
@@ -186,7 +183,7 @@ public final class ConfigManager {
                 );
 
                 case LIGHTNING_BOLT -> abilityBuilder = abilityBuilder.lightningDamage(
-                        CheckUtil.doubleVal(swordID, "Sword ability - ligtning bolt damage value", swordAbilityMap.get("lightning_damage"), 5.0)
+                        CheckUtil.doubleVal(swordID, "Sword ability - lightning bolt damage value", swordAbilityMap.get("lightning_damage"), 5.0)
                 );
             }
             ability = abilityBuilder.build();

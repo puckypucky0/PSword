@@ -1,10 +1,11 @@
 # PSword
 
-A Paper plugin that gives swords their own **effects**: particles, sounds and lightning that fire on
-combat triggers such as critical hits and kills. Swords are defined in `config.yml` and handed out with a
-command.
+A Paper plugin that gives swords their own **effects** and **abilities**. Effects are visual: particles, sounds and
+lightning that fire on combat triggers such as critical hits and kills. Abilities change the fight: potion effects on
+you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
+Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** early development (v1.0.0). Abilities are planned for v2.
+> **Status:** alpha (v2.0.0-alpha). Abilities are new; please report bugs on GitHub.
 
 ## Requirements
 
@@ -17,17 +18,22 @@ command.
 2. Start the server once to generate `plugins/PSword/config.yml`.
 3. Define your swords in the config and run `/psword reload`.
 
+> Updating from v1? `config.yml` is not overwritten on update. Add `abilitiesFireOnPlayersOnly` to `settings` and an
+> `abilities` list to your swords yourself, or delete the old config to get the new default one.
+
 ## Commands & Permissions
 
 | Command | Description | Permission |
 |---|---|---|
 | `/psword giveSword <id>` | Gives you the sword with the given id | `psword.givesword` |
-| `/psword reload` | Reloads the configuration | `psword.reload` |
+| `/psword reload` | Reloads the configuration and resets all cooldowns | `psword.reload` |
 
 `/ps` is an alias for `/psword`. Using the root command requires `psword.use`.
 
 ## Default Configuration
 
+The default config contains one example sword per effect and ability type, plus a showcase sword that combines
+them. Give any of them with `/psword giveSword <id>` to see what it does.
 ```yaml
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 
@@ -42,33 +48,168 @@ settings:
 
   # Change these settings and run /ps reload to see the effects in-game
   effectShowOnPlayersOnly: true
+  abilitiesFireOnPlayersOnly: true
 
+# Every sword below shows ONE effect or ability so you can see what each one does.
+# Give one with /ps giveSword <id>, then copy the parts you like into your own swords.
 swords:
-  "test_sword":
-    name: "<b><rainbow>TEST SWORD"
+
+  # ===================== EFFECTS (visual only) =====================
+
+  "particle_sword":
+    name: "<aqua>Particle Effect"
     lore:
-      - "<red>Red"
-      - "<green>Green"
-      - "<blue>Blue"
-    material: DIAMOND_SWORD
+      - "<gray>Effect: <white>PARTICLE"
+      - "<gray>Releases souls on every hit."
+    material: IRON_SWORD
     effects:
-      # Particles must be this type: https://minecraft.wiki/w/Particles
-      # Trigger should be one of these: ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
       - type: PARTICLE
-        trigger: ON_HIT_CRIT
-        particle_type: soul
-        multiplier: 1.0
+        trigger: ON_DAMAGE_DEAL
+        particle_type: soul       # https://minecraft.wiki/w/Particles
+        multiplier: 1.0           # 1.0 = 25 particles
 
-      # LIGHTNING effect type doesn't have any options, only needs a trigger just like any other effect type.
-      - type: LIGHTNING
-        trigger: ON_KILL
-
-      # Sounds must be this type: https://minecraft.wiki/w/Sounds.json/Java_Edition_values
+  "sound_sword":
+    name: "<gold>Sound Effect"
+    lore:
+      - "<gray>Effect: <white>SOUND"
+      - "<gray>Rings on critical hits."
+    material: GOLDEN_SWORD
+    effects:
       - type: SOUND
         trigger: ON_HIT_CRIT
-        sound: block.trial_spawner.eject_item
+        sound: block.trial_spawner.eject_item   # https://minecraft.wiki/w/Sounds.json/Java_Edition_values
         volume: 1.0
         pitch: 0.5
+
+  "lightning_sword":
+    name: "<yellow>Lightning Effect"
+    lore:
+      - "<gray>Effect: <white>LIGHTNING"
+      - "<gray>Lightning strikes where your victim falls."
+      - "<dark_gray>Visual only, deals no damage."
+    material: DIAMOND_SWORD
+    effects:
+      - type: LIGHTNING           # no options, only a trigger
+        trigger: ON_KILL
+
+  # ===================== ABILITIES (gameplay) =====================
+  # Every ability needs: type, name (shown on the action bar while on cooldown), trigger and cooldown_millis.
+  # Potion abilities: effect_type (https://minecraft.wiki/w/Effect), duration_seconds, level (1 = I, 2 = II ...)
+
+  "self_effect_sword":
+    name: "<green>Speed Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_SELF"
+      - "<gray>Critical hits give you Speed II for 5s."
+      - "<dark_gray>Cooldown: 10s"
+    material: IRON_SWORD
+    abilities:
+      - type: EFFECT_SELF
+        name: "<green>Speed"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 10000
+        effect_type: speed
+        duration_seconds: 5
+        level: 2
+
+  "single_effect_sword":
+    name: "<dark_green>Poison Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_SINGLE"
+      - "<gray>Poisons the target for 4s."
+      - "<dark_gray>Cooldown: 8s"
+    material: STONE_SWORD
+    abilities:
+      - type: EFFECT_SINGLE
+        name: "<dark_green>Poison"
+        trigger: ON_DAMAGE_DEAL
+        cooldown_millis: 8000
+        effect_type: poison
+        duration_seconds: 4
+        level: 1
+
+  "radius_effect_sword":
+    name: "<dark_aqua>Levitation Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_RADIUS"
+      - "<gray>Critical hits lift everyone within 5 blocks"
+      - "<gray>into the air for 2s (not you)."
+      - "<dark_gray>Cooldown: 20s"
+    material: DIAMOND_SWORD
+    abilities:
+      - type: EFFECT_RADIUS
+        name: "<aqua>Levitation"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 20000
+        effect_type: levitation
+        duration_seconds: 2
+        level: 1
+        radius: 5                 # blocks
+
+  "lightning_bolt_sword":
+    name: "<yellow>Lightning Ability"
+    lore:
+      - "<gray>Ability: <white>LIGHTNING_BOLT"
+      - "<gray>Critical hits call down lightning"
+      - "<gray>for 2 extra hearts of damage."
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: LIGHTNING_BOLT
+        name: "<yellow>⚡ Lightning"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 15000
+        lightning_damage: 4.0     # 1 heart = 2 damage
+
+  # ===================== EVERYTHING TOGETHER =====================
+
+  "showcase_sword":
+    name: "<b><gradient:#5BC0EB:#2E4057>Showcase Sword"
+    lore:
+      - "<gray>Effects and abilities on one sword."
+      - ""
+      - "<gray>Hit: <white>soul particles"
+      - "<gray>Critical hit: <white>blue flames, thunder sound,"
+      - "<white>  Strength I for you"
+      - "<gray>Kill: <white>lightning + level up sound"
+      - "<gray>Hit by a player: <white>they start glowing"
+    material: NETHERITE_SWORD
+    effects:
+      - type: PARTICLE
+        trigger: ON_DAMAGE_DEAL
+        particle_type: soul
+        multiplier: 0.6
+      - type: PARTICLE
+        trigger: ON_HIT_CRIT
+        particle_type: soul_fire_flame
+        multiplier: 1.5
+      - type: SOUND
+        trigger: ON_HIT_CRIT
+        sound: item.trident.thunder
+        volume: 0.7
+        pitch: 1.2
+      - type: LIGHTNING
+        trigger: ON_KILL
+      - type: SOUND
+        trigger: ON_KILL
+        sound: entity.player.levelup
+        volume: 1.0
+        pitch: 1.0
+    abilities:
+      - type: EFFECT_SELF
+        name: "<red>Strength"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 12000
+        effect_type: strength
+        duration_seconds: 5
+        level: 1
+      - type: EFFECT_SINGLE
+        name: "<white>Glowing"
+        trigger: ON_DAMAGE_RECEIVE  # the target is the player who hit you
+        cooldown_millis: 10000
+        effect_type: glowing
+        duration_seconds: 5
+        level: 1
 ```
 
 ### Effect types
@@ -79,6 +220,33 @@ swords:
 | `SOUND` | `sound` ([list](https://minecraft.wiki/w/Sounds.json/Java_Edition_values)), `volume`, `pitch` |
 | `LIGHTNING` | none, visual only (deals no damage) |
 
+### Ability types
+
+| Type | What it does | Options |
+|---|---|---|
+| `EFFECT_SELF` | Gives **you** a potion effect | `effect_type`, `duration_seconds`, `level` |
+| `EFFECT_SINGLE` | Gives **the target** a potion effect | `effect_type`, `duration_seconds`, `level` |
+| `EFFECT_RADIUS` | Gives **everyone around you** (except you) a potion effect | `effect_type`, `duration_seconds`, `level`, `radius` (blocks, default `5`) |
+| `LIGHTNING_BOLT` | Strikes the target with lightning that deals extra damage | `lightning_damage` (1 heart = 2 damage) |
+
+Every ability also needs:
+
+| Option | Description |
+|---|---|
+| `name` | **Required.** Shown on the action bar while the ability is on cooldown. Supports MiniMessage. Abilities without a name are not loaded. |
+| `trigger` | When the ability fires (see [Triggers](#triggers)). |
+| `cooldown_millis` | Cooldown in milliseconds (`1500` = 1.5 seconds). Each ability has its own cooldown per player. |
+
+Potion options:
+
+- `effect_type`: a potion effect key such as `speed`, `strength`, `poison` or `slowness`
+  ([list](https://minecraft.wiki/w/Effect)).
+- `duration_seconds`: how long the effect lasts.
+- `level`: `1` = level I, `2` = level II, and so on.
+
+While at least one ability of the held sword is on cooldown, the action bar shows every running cooldown with its name
+and the remaining seconds.
+
 ### Triggers
 
 | Trigger | Fires when the sword holder… |
@@ -88,10 +256,14 @@ swords:
 | `ON_KILL` | kills an entity |
 | `ON_DAMAGE_RECEIVE` | is hit by a player |
 
-When `effectShowOnPlayersOnly` is `true`, `ON_DAMAGE_DEAL`, `ON_HIT_CRIT` and `ON_KILL` only fire against players.
+When `effectShowOnPlayersOnly` / `abilitiesFireOnPlayersOnly` is `true`, `ON_DAMAGE_DEAL`, `ON_HIT_CRIT` and `ON_KILL`
+only fire against players.
 
-Invalid values in the config are logged to the console and replaced with a default (or the effect is skipped)
-instead of crashing the plugin.
+For `ON_DAMAGE_RECEIVE`, "the target" of an ability is the player who hit you. With `ON_KILL` the target is already
+dead, so use `EFFECT_SELF` or `EFFECT_RADIUS` there.
+
+Invalid values in the config are logged to the console and replaced with a default (or the effect / ability is
+skipped) instead of crashing the plugin.
 
 ## Building
 

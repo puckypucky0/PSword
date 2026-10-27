@@ -16,16 +16,6 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.Map;
 
 public class CheckUtil {
-    public static <T> T getOrDefault(String path, Class<T> type, T def) {
-        FileConfiguration config = PSwordMain.instance.getConfig();
-        Object value = config.get(path);
-
-        if (!config.contains(path, true) || !type.isInstance(value)) {
-            Logger.warn("<dark_red>" + path + " <gray>is missing or invalid. <dark_red>Using default: <white>" + def);
-            return def;
-        }
-        return type.cast(value);
-    }
 
     public static double doubleVal(String swordID, String keyName, Object value, double def) {
         if (value instanceof Number n && n.doubleValue() >= 0)
@@ -96,36 +86,36 @@ public class CheckUtil {
                 registry.get(NamespacedKey.fromString(defaultParticleKey));
     }
 
-    public static Trigger validTriggerType(Object triggerKey) {
+    public static Trigger validTriggerType(Object triggerKey, String swordID) {
         if (triggerKey instanceof String effectTriggerKey) {
             try {
                 return Trigger.valueOf(effectTriggerKey);
             } catch (IllegalArgumentException ignored) {
-                Logger.fatal("Trigger key is invalid. This ability / effect will be skipped.");
+                Logger.fatal("Trigger key is invalid. This ability / effect will be skipped -- " + swordID);
                 return null;
             }
 
         } return null;
     }
 
-    public static SwordEffectType validSwordEffectType(Object effectType) {
+    public static SwordEffectType validSwordEffectType(String swordID, Object effectType) {
         if (effectType instanceof String effectTypeKey) {
             try {
                 return SwordEffectType.valueOf(effectTypeKey);
             } catch (IllegalArgumentException ignored) {
-                Logger.fatal("Sword effect type key is invalid. This effect will be skipped.");
+                Logger.fatal("Sword effect type key is invalid. This effect will be skipped - " + swordID);
                 return null;
             }
 
         } return null;
     }
 
-    public static SwordAbilityType validSwordAbilityType(Object abilityType) {
+    public static SwordAbilityType validSwordAbilityType(String swordID, Object abilityType) {
         if (abilityType instanceof String abilityTypeKey) {
             try {
                 return SwordAbilityType.valueOf(abilityTypeKey);
             } catch (IllegalArgumentException ignored) {
-                Logger.fatal("Sword ability type key is invalid. This effect will be skipped.");
+                Logger.fatal("Sword ability type key is invalid. This ability will be skipped - " + swordID);
                 return null;
             }
 
@@ -146,7 +136,7 @@ public class CheckUtil {
         return new PotionEffect(
                 effect,
                 intVal(swordID, "Ability potion effect duration value", abilityMap.get("duration_seconds"), 10) * 20,
-                intVal(swordID, "Ability potion effect level value", abilityMap.get("level"), 1) - 1
+                Math.max(1, intVal(swordID, "Ability potion effect level value", abilityMap.get("level"), 1)) - 1
         );
     }
 }

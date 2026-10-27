@@ -1,3 +1,31 @@
+#########################################################################
+#
+#   ██████╗░░██████╗░██╗░░░░░░░██╗░█████╗░██████╗░██████╗░
+#   ██╔══██╗██╔════╝░██║░░██╗░░██║██╔══██╗██╔══██╗██╔══██╗
+#   ██████╔╝╚█████╗░░╚██╗████╗██╔╝██║░░██║██████╔╝██║░░██║
+#   ██╔═══╝░░╚═══██╗░░████╔═████║░██║░░██║██╔══██╗██║░░██║
+#   ██║░░░░░██████╔╝░░╚██╔╝░╚██╔╝░╚█████╔╝██║░░██║██████╔╝
+#   ╚═╝░░░░░╚═════╝░░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚═╝╚═════╝░
+#
+#   WELCOME TO PSWORD V2 CONFIGURATION.
+# ---------------------------------------------------------------
+#  Valid values
+# ---------------------------------------------------------------
+#  Effect types (effects:)  : PARTICLE, SOUND, LIGHTNING
+#  Ability types (abilities:): EFFECT_SELF, EFFECT_SINGLE, EFFECT_RADIUS, LIGHTNING_BOLT
+#  Triggers                  : ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
+#
+#  Where to find the keys (use the lowercase id, e.g. "soul", "entity.player.levelup", "speed"):
+#  - Particles      : https://minecraft.wiki/w/Particles
+#                     (particles that need extra data such as dust, block or item are not supported)
+#  - Sounds         : https://minecraft.wiki/w/Sounds.json/Java_Edition_values
+#  - Potion effects : https://minecraft.wiki/w/Effect
+#  - Materials      : https://jd.papermc.io/paper/1.21.4/org/bukkit/Material.html (e.g. DIAMOND_SWORD)
+#  - Text format    : https://docs.advntr.dev/minimessage/format.html (name, lore, ability name)
+# ---------------------------------------------------------------
+#########################################################################
+
+
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 
 settings:
@@ -13,69 +41,166 @@ settings:
   effectShowOnPlayersOnly: true
   abilitiesFireOnPlayersOnly: true
 
+# Every sword below shows ONE effect or ability so you can see what each one does.
+# Give one with /ps giveSword <id>, then copy the parts you like into your own swords.
 swords:
-  "test_sword":
-    name: "<b><rainbow>TEST SWORD"
+
+  # ===================== EFFECTS (visual only) =====================
+
+  "particle_sword":
+    name: "<aqua>Particle Effect"
     lore:
-      - "<red>Red"
-      - "<green>Green"
-      - "<blue>Blue"
-    material: DIAMOND_SWORD
+      - "<gray>Effect: <white>PARTICLE"
+      - "<gray>Releases souls on every hit."
+    material: IRON_SWORD
     effects:
-      # Particles must be this type: https://minecraft.wiki/w/Particles
-      # Trigger should be one of these: ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
       - type: PARTICLE
-        trigger: ON_HIT_CRIT
-        particle_type: soul
-        multiplier: 1.0
+        trigger: ON_DAMAGE_DEAL
+        particle_type: soul       # https://minecraft.wiki/w/Particles
+        multiplier: 1.0           # 1.0 = 25 particles
 
-      # LIGHTNING effect type doesn't have any options, only needs a trigger just like any other effect type.
-      - type: LIGHTNING
-        trigger: ON_KILL
-
-      # Sounds must be this type: https://minecraft.wiki/w/Sounds.json/Java_Edition_values
+  "sound_sword":
+    name: "<gold>Sound Effect"
+    lore:
+      - "<gray>Effect: <white>SOUND"
+      - "<gray>Rings on critical hits."
+    material: GOLDEN_SWORD
+    effects:
       - type: SOUND
         trigger: ON_HIT_CRIT
-        sound: block.trial_spawner.eject_item
+        sound: block.trial_spawner.eject_item   # https://minecraft.wiki/w/Sounds.json/Java_Edition_values
         volume: 1.0
         pitch: 0.5
+
+  "lightning_sword":
+    name: "<yellow>Lightning Effect"
+    lore:
+      - "<gray>Effect: <white>LIGHTNING"
+      - "<gray>Lightning strikes where your victim falls."
+      - "<dark_gray>Visual only, deals no damage."
+    material: DIAMOND_SWORD
+    effects:
+      - type: LIGHTNING           # no options, only a trigger
+        trigger: ON_KILL
+
+  # ===================== ABILITIES (gameplay) =====================
+  # Every ability needs: type, name (shown on the action bar while on cooldown), trigger and cooldown_millis.
+  # Potion abilities: effect_type (https://minecraft.wiki/w/Effect), duration_seconds, level (1 = I, 2 = II ...)
+
+  "self_effect_sword":
+    name: "<green>Speed Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_SELF"
+      - "<gray>Critical hits give you Speed II for 5s."
+      - "<dark_gray>Cooldown: 10s"
+    material: IRON_SWORD
     abilities:
-      # EFFECT_SELF,
-      #    EFFECT_SINGLE,
-      #    EFFECT_RADIUS,
-      #    LIGHTNING_BOLT,
-      #    LIFE_STEAL,
-      #    DASH,
-      #    BLINK
       - type: EFFECT_SELF
-        name: "Test Effect #1"
+        name: "<green>Speed"
         trigger: ON_HIT_CRIT
-        cooldown_millis: 1500
-        effect_type: slowness
-        duration_seconds: 30
+        cooldown_millis: 10000
+        effect_type: speed
+        duration_seconds: 5
         level: 2
 
+  "single_effect_sword":
+    name: "<dark_green>Poison Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_SINGLE"
+      - "<gray>Poisons the target for 4s."
+      - "<dark_gray>Cooldown: 8s"
+    material: STONE_SWORD
+    abilities:
       - type: EFFECT_SINGLE
-        name: "Test Effect #2"
+        name: "<dark_green>Poison"
         trigger: ON_DAMAGE_DEAL
-        cooldown_millis: 1500
-        effect_type: blindness
-        duration_seconds: 30
+        cooldown_millis: 8000
+        effect_type: poison
+        duration_seconds: 4
         level: 1
 
+  "radius_effect_sword":
+    name: "<dark_aqua>Levitation Ability"
+    lore:
+      - "<gray>Ability: <white>EFFECT_RADIUS"
+      - "<gray>Critical hits lift everyone within 5 blocks"
+      - "<gray>into the air for 2s (not you)."
+      - "<dark_gray>Cooldown: 20s"
+    material: DIAMOND_SWORD
+    abilities:
       - type: EFFECT_RADIUS
-        name: "Test Effect #3"
-        trigger: ON_DAMAGE_DEAL
-        cooldown_millis: 1500
+        name: "<aqua>Levitation"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 20000
         effect_type: levitation
+        duration_seconds: 2
+        level: 1
+        radius: 5                 # blocks
+
+  "lightning_bolt_sword":
+    name: "<yellow>Lightning Ability"
+    lore:
+      - "<gray>Ability: <white>LIGHTNING_BOLT"
+      - "<gray>Critical hits call down lightning"
+      - "<gray>for 2 extra hearts of damage."
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: LIGHTNING_BOLT
+        name: "<yellow>⚡ Lightning"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 15000
+        lightning_damage: 4.0     # 1 heart = 2 damage
+
+  # ===================== EVERYTHING TOGETHER =====================
+
+  "showcase_sword":
+    name: "<b><gradient:#5BC0EB:#2E4057>Showcase Sword"
+    lore:
+      - "<gray>Effects and abilities on one sword."
+      - ""
+      - "<gray>Hit: <white>soul particles"
+      - "<gray>Critical hit: <white>blue flames, thunder sound,"
+      - "<white>  Strength I for you"
+      - "<gray>Kill: <white>lightning + level up sound"
+      - "<gray>Hit by a player: <white>they start glowing"
+    material: NETHERITE_SWORD
+    effects:
+      - type: PARTICLE
+        trigger: ON_DAMAGE_DEAL
+        particle_type: soul
+        multiplier: 0.6
+      - type: PARTICLE
+        trigger: ON_HIT_CRIT
+        particle_type: soul_fire_flame
+        multiplier: 1.5
+      - type: SOUND
+        trigger: ON_HIT_CRIT
+        sound: item.trident.thunder
+        volume: 0.7
+        pitch: 1.2
+      - type: LIGHTNING
+        trigger: ON_KILL
+      - type: SOUND
+        trigger: ON_KILL
+        sound: entity.player.levelup
+        volume: 1.0
+        pitch: 1.0
+    abilities:
+      - type: EFFECT_SELF
+        name: "<red>Strength"
+        trigger: ON_HIT_CRIT
+        cooldown_millis: 12000
+        effect_type: strength
         duration_seconds: 5
         level: 1
-
-      - type: LIGHTNING_BOLT
-        name: "Test Effect #4"
-        trigger: ON_DAMAGE_DEAL
-        cooldown_millis: 1500
-        lightning_damage: 5.0 # 1 heart: 2 damage.
+      - type: EFFECT_SINGLE
+        name: "<white>Glowing"
+        trigger: ON_DAMAGE_RECEIVE  # the target is the player who hit you
+        cooldown_millis: 10000
+        effect_type: glowing
+        duration_seconds: 5
+        level: 1
 
 
 

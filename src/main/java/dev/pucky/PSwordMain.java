@@ -81,6 +81,7 @@ public final class PSwordMain extends JavaPlugin implements Listener {
                                     component.append(ability.abilityName())
                                             .append(MMUtil.deserialize(" "))
                                             .append(MMUtil.deserialize(secondsLeft));
+                        else cooldowns.remove(cooldownKey);
                     }
                 }
 
@@ -97,6 +98,7 @@ public final class PSwordMain extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        this.abilityCooldownTask.cancel();
+        if (this.abilityCooldownTask != null)
+            this.abilityCooldownTask.cancel();
     }
 }
