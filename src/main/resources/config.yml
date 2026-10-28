@@ -12,8 +12,8 @@
 #  Valid values
 # ---------------------------------------------------------------
 #  Effect types (effects:)  : PARTICLE, SOUND, LIGHTNING
-#  Ability types (abilities:): EFFECT_SELF, EFFECT_SINGLE, EFFECT_RADIUS, LIGHTNING_BOLT
-#  Triggers                  : ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE
+#  Ability types (abilities:): EFFECT_SELF, EFFECT_SINGLE, EFFECT_RADIUS, LIGHTNING_BOLT, LIGHTNING_BOLT_RADIUS
+#  Triggers                  : ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE, RIGHT_CLICK
 #
 #  Where to find the keys (use the lowercase id, e.g. "soul", "entity.player.levelup", "speed"):
 #  - Particles      : https://minecraft.wiki/w/Particles
@@ -28,6 +28,7 @@
 
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 
+# Change these settings and run /ps reload to see the effects in-game
 settings:
   particleOffsetX: 0.6
   particleOffsetY: 0.3
@@ -37,9 +38,13 @@ settings:
   particleOffsetExtra: 0.2
   # How speedy should particles be in every angle.
 
-  # Change these settings and run /ps reload to see the effects in-game
   effectShowOnPlayersOnly: true
   abilitiesFireOnPlayersOnly: true
+  # In its name.
+
+  rightClickIgnoreInteractables: true
+  # If true, a player with sword that has a right click trigger ability won't be able to use
+  # their ability if they right-click an interactive block such as chests, buttons or doors etc.
 
 # Every sword below shows ONE effect or ability so you can see what each one does.
 # Give one with /ps giveSword <id>, then copy the parts you like into your own swords.
@@ -151,6 +156,23 @@ swords:
         trigger: ON_HIT_CRIT
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
+
+  "lightning_bolt_radius_sword":
+    name: "<yellow>Radius Lightning Ability"
+    lore:
+      - "<gray>Ability: <white>LIGHTNING_BOLT_RADIUS"
+      - "<gray>Right click calls down lightning"
+      - "<gray>for 2 extra hearts of damage"
+      - "<gray>to everyone around you with a radius of 3 blocks"
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: LIGHTNING_BOLT_RADIUS
+        name: "<yellow>⚡ Lightning"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        lightning_damage: 4.0     # 1 heart = 2 damage
+        radius: 3
 
   # ===================== EVERYTHING TOGETHER =====================
 

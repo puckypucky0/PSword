@@ -5,7 +5,7 @@ lightning that fire on combat triggers such as critical hits and kills. Abilitie
 you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
 Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** alpha (v2.0.0-alpha). Abilities are new; please report bugs on GitHub.
+> **Status:** stable (v2.1.0). Abilities are new; please report bugs on GitHub.
 
 ## Requirements
 
@@ -37,6 +37,7 @@ them. Give any of them with `/psword giveSword <id>` to see what it does.
 ```yaml
 title: "<b><gradient:#BB5444:#214452>PSWORD</gradient></b> <dark_gray> >"
 
+# Change these settings and run /ps reload to see the effects in-game
 settings:
   particleOffsetX: 0.6
   particleOffsetY: 0.3
@@ -46,9 +47,13 @@ settings:
   particleOffsetExtra: 0.2
   # How speedy should particles be in every angle.
 
-  # Change these settings and run /ps reload to see the effects in-game
   effectShowOnPlayersOnly: true
   abilitiesFireOnPlayersOnly: true
+  
+
+  rightClickIgnoreInteractables: true
+  # If true, a player with sword that has a right click trigger ability won't be able to use
+  # their ability if they right-click an interactive block such as chests, buttons or doors etc.
 
 # Every sword below shows ONE effect or ability so you can see what each one does.
 # Give one with /ps giveSword <id>, then copy the parts you like into your own swords.
@@ -160,6 +165,22 @@ swords:
         trigger: ON_HIT_CRIT
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
+  "lightning_bolt_radius_sword":
+    name: "<yellow>Radius Lightning Ability"
+    lore:
+      - "<gray>Ability: <white>LIGHTNING_BOLT_RADIUS"
+      - "<gray>Right click calls down lightning"
+      - "<gray>for 2 extra hearts of damage"
+      - "<gray>to everyone around you with a radius of 3 blocks"
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: LIGHTNING_BOLT_RADIUS
+        name: "<yellow>⚡ Lightning"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        lightning_damage: 4.0     # 1 heart = 2 damage
+        radius: 3
 
   # ===================== EVERYTHING TOGETHER =====================
 
@@ -222,20 +243,21 @@ swords:
 
 ### Ability types
 
-| Type | What it does | Options |
-|---|---|---|
-| `EFFECT_SELF` | Gives **you** a potion effect | `effect_type`, `duration_seconds`, `level` |
-| `EFFECT_SINGLE` | Gives **the target** a potion effect | `effect_type`, `duration_seconds`, `level` |
-| `EFFECT_RADIUS` | Gives **everyone around you** (except you) a potion effect | `effect_type`, `duration_seconds`, `level`, `radius` (blocks, default `5`) |
-| `LIGHTNING_BOLT` | Strikes the target with lightning that deals extra damage | `lightning_damage` (1 heart = 2 damage) |
+| Type                    | What it does                                                                        | Options                                                                    |
+|-------------------------|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| `EFFECT_SELF`           | Gives **you** a potion effect                                                       | `effect_type`, `duration_seconds`, `level`                                 |
+| `EFFECT_SINGLE`         | Gives **the target** a potion effect                                                | `effect_type`, `duration_seconds`, `level`                                 |
+| `EFFECT_RADIUS`         | Gives **everyone around you** (except you) a potion effect                          | `effect_type`, `duration_seconds`, `level`, `radius` (blocks, default `5`) |
+| `LIGHTNING_BOLT`        | Strikes the target with lightning that deals extra damage                           | `lightning_damage` (1 heart = 2 damage)                                    |
+| `LIGHTNING_BOLT_RADIUS` | Strikes **everyone around you** (except you) with lightning that deals extra damage | `lightning_damage` (1 heart = 2 damage), `radius` (blocks, default `3`)    |
 
 Every ability also needs:
 
-| Option | Description |
-|---|---|
-| `name` | **Required.** Shown on the action bar while the ability is on cooldown. Supports MiniMessage. Abilities without a name are not loaded. |
-| `trigger` | When the ability fires (see [Triggers](#triggers)). |
-| `cooldown_millis` | Cooldown in milliseconds (`1500` = 1.5 seconds). Each ability has its own cooldown per player. |
+| Option            | Description                                                                                                                            |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `name`            | **Required.** Shown on the action bar while the ability is on cooldown. Supports MiniMessage. Abilities without a name are not loaded. |
+| `trigger`         | When the ability fires (see [Triggers](#triggers)).                                                                                    |
+| `cooldown_millis` | Cooldown in milliseconds (`1500` = 1.5 seconds). Each ability has its own cooldown per player.                                         |
 
 Potion options:
 
@@ -249,12 +271,13 @@ and the remaining seconds.
 
 ### Triggers
 
-| Trigger | Fires when the sword holder… |
-|---|---|
-| `ON_DAMAGE_DEAL` | hits an entity |
-| `ON_HIT_CRIT` | lands a critical hit |
-| `ON_KILL` | kills an entity |
-| `ON_DAMAGE_RECEIVE` | is hit by a player |
+| Trigger             | Fires when the sword holder…      |
+|---------------------|-----------------------------------|
+| `ON_DAMAGE_DEAL`    | hits an entity                    |
+| `ON_HIT_CRIT`       | lands a critical hit              |
+| `ON_KILL`           | kills an entity                   |
+| `ON_DAMAGE_RECEIVE` | is hit by a player                |
+| `RIGHT_CLICK`       | when right click (only abilities) |
 
 When `effectShowOnPlayersOnly` / `abilitiesFireOnPlayersOnly` is `true`, `ON_DAMAGE_DEAL`, `ON_HIT_CRIT` and `ON_KILL`
 only fire against players.

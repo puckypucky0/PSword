@@ -30,6 +30,7 @@ public final class ConfigManager {
     private double particleOffsetExtra = 0.0;
     private boolean effectShowOnPlayersOnly = true;
     private boolean abilitiesFireOnPlayersOnly = true;
+    private boolean rightClickIgnoreInteractables = true;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -45,6 +46,7 @@ public final class ConfigManager {
         particleOffsetExtra = plugin.getConfig().getDouble("settings.particleOffsetExtra", 0.02);
         effectShowOnPlayersOnly = plugin.getConfig().getBoolean("settings.effectShowOnPlayersOnly", true);
         abilitiesFireOnPlayersOnly = plugin.getConfig().getBoolean("settings.abilitiesFireOnPlayersOnly", true);
+        rightClickIgnoreInteractables = plugin.getConfig().getBoolean("settings.rightClickIgnoreInteractables", true);
 
         swords.clear();
         loadSwords();
@@ -100,6 +102,11 @@ public final class ConfigManager {
             Trigger effectTrigger = CheckUtil.validTriggerType(swordEffectMap.get("trigger"), swordID);
             if (effectTrigger == null)
                 continue;
+
+            if (effectTrigger == Trigger.RIGHT_CLICK) {
+                Logger.fatal("<dark_red>You can't use RIGHT_CLICK trigger with a sword effect! - " + swordID);
+                continue;
+            }
 
             SwordEffect.SwordEffectBuilder effectBuilder = SwordEffect.builder()
                     .effectType(effectType)
@@ -185,6 +192,16 @@ public final class ConfigManager {
                 case LIGHTNING_BOLT -> abilityBuilder = abilityBuilder.lightningDamage(
                         CheckUtil.doubleVal(swordID, "Sword ability - lightning bolt damage value", swordAbilityMap.get("lightning_damage"), 5.0)
                 );
+
+                case LIGHTNING_BOLT_RADIUS -> {
+                    abilityBuilder = abilityBuilder.radiusLightningDamage(
+                            CheckUtil.doubleVal(swordID, "Sword ability - radius lightning bolt damage value", swordAbilityMap.get("lightning_damage"), 5.0)
+                    );
+
+                    abilityBuilder = abilityBuilder.lightningRadius(
+                            CheckUtil.intVal(swordID, "Sword ability - lightning bolt radius value", swordAbilityMap.get("radius"), 3)
+                    );
+                }
             }
             ability = abilityBuilder.build();
             abilities.add(ability);

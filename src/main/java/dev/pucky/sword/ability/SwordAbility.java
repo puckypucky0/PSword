@@ -22,6 +22,10 @@ public class SwordAbility {
     // Lightning
     private double lightningDamage;
 
+    // Radius lightning
+    private double radiusLightningDamage;
+    private Integer lightningRadius;
+
     // Life steal
     private double ratio;
 
