@@ -1,5 +1,6 @@
 package dev.pucky.config;
 
+import dev.pucky.particle.Gradient;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbility;
@@ -11,8 +12,11 @@ import dev.pucky.util.MMUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -40,13 +44,15 @@ public final class ConfigManager {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
 
-        particleOffsetX = plugin.getConfig().getDouble("settings.particleOffsetX", 0.3);
-        particleOffsetY = plugin.getConfig().getDouble("settings.particleOffsetY", 0.8);
-        particleOffsetZ = plugin.getConfig().getDouble("settings.particleOffsetZ", 0.3);
-        particleOffsetExtra = plugin.getConfig().getDouble("settings.particleOffsetExtra", 0.02);
-        effectShowOnPlayersOnly = plugin.getConfig().getBoolean("settings.effectShowOnPlayersOnly", true);
-        abilitiesFireOnPlayersOnly = plugin.getConfig().getBoolean("settings.abilitiesFireOnPlayersOnly", true);
-        rightClickIgnoreInteractables = plugin.getConfig().getBoolean("settings.rightClickIgnoreInteractables", true);
+        FileConfiguration config = plugin.getConfig();
+
+        particleOffsetX = config.getDouble("settings.particleOffsetX", 0.3);
+        particleOffsetY = config.getDouble("settings.particleOffsetY", 0.8);
+        particleOffsetZ = config.getDouble("settings.particleOffsetZ", 0.3);
+        particleOffsetExtra = config.getDouble("settings.particleOffsetExtra", 0.02);
+        effectShowOnPlayersOnly = config.getBoolean("settings.effectShowOnPlayersOnly", true);
+        abilitiesFireOnPlayersOnly = config.getBoolean("settings.abilitiesFireOnPlayersOnly", true);
+        rightClickIgnoreInteractables = config.getBoolean("settings.rightClickIgnoreInteractables", true);
 
         swords.clear();
         loadSwords();
@@ -130,13 +136,31 @@ public final class ConfigManager {
                     );
                 }
                 case PARTICLE -> {
-                    effectBuilder = effectBuilder.particleType(
-                            CheckUtil.particleVal(swordID, swordEffectMap, "flame")
-                    );
-
+                    Particle particle = CheckUtil.particleVal(swordID, swordEffectMap, "flame");
+                    effectBuilder = effectBuilder.particleType(particle);
                     effectBuilder = effectBuilder.particleMultiplier(
                             CheckUtil.doubleVal(swordID, "Sword effect particle multiplier value", swordEffectMap.get("multiplier"), 1.0)
                     );
+
+                    if (particle == Particle.DUST) {
+                        Logger.inform("<green>Parameterized particle <dark_green>DUST <green>detected (new in v2.2.0), trying to load it - " + swordID);
+
+                        Map<?, ?> dustDataMap = CheckUtil.mapVal(swordID, "Sword effect particle - dust options", swordEffectMap.get("dust_data"));
+                        String hex = CheckUtil.stringVal(swordID, "Sword effect particle - dust color", dustDataMap.get("color"), "#f0f0f0");
+                        Color color;
+                        float scale = (float) CheckUtil.doubleVal(swordID, "Sword effect particle - dust scale", dustDataMap.get("scale"), 2.0);
+
+                        if (Gradient.isValidHex(hex))
+                            color = Gradient.fromHex(hex);
+                        else {
+                            Logger.fatal("<red>Invalid hex on dust color. Defaulting to \"#f0f0f0\" - " + swordID);
+                            color = Gradient.fromHex("#f0f0f0");
+                        }
+
+                        Particle.DustOptions dustOptions = new Particle.DustOptions(color, scale);
+
+                        effectBuilder.dustOptions(dustOptions);
+                    }
                 }
             }
 
@@ -183,6 +207,26 @@ public final class ConfigManager {
                                 CheckUtil.intVal(swordID, "Sword ability - effect radius value", swordAbilityMap.get("radius"), 5) :
                                 null
                     );
+
+                    if (abilityType == SwordAbilityType.EFFECT_RADIUS) {
+                        Map<?, ?> map = CheckUtil.mapVal(swordID, "Sword ability - radius hightlight map", swordAbilityMap.get("radius_highlight_particle"));
+
+                        abilityBuilder = abilityBuilder.successRadiusHighlightEnabled(
+                                CheckUtil.booleanVal(swordID, "Sword ability - successful ability radius hightlight enabled value", map.get("successful-ability-highlight-enabled"), true)
+                        );
+
+                        abilityBuilder = abilityBuilder.successRadiusHighlightColors(
+                                CheckUtil.stringListVal(swordID, "Sword ability - successful ability radius highlight colors", map.get("successful-colors"), List.of("#13eb4c"))
+                        );
+
+                        abilityBuilder = abilityBuilder.failRadiusHighlightEnabled(
+                                CheckUtil.booleanVal(swordID, "Sword ability - fail ability radius hightlight enabled value", map.get("failed-ability-highlight-enabled"), true)
+                        );
+
+                        abilityBuilder = abilityBuilder.failRadiusHighlightColors(
+                                CheckUtil.stringListVal(swordID, "Sword ability - fail ability radius highlight colors", map.get("fail-colors"), List.of("#870000"))
+                        );
+                    }
                 }
 
                 case EFFECT_SELF -> abilityBuilder = abilityBuilder.selfEffect(
@@ -200,6 +244,24 @@ public final class ConfigManager {
 
                     abilityBuilder = abilityBuilder.lightningRadius(
                             CheckUtil.intVal(swordID, "Sword ability - lightning bolt radius value", swordAbilityMap.get("radius"), 3)
+                    );
+
+                    Map<?, ?> map = CheckUtil.mapVal(swordID, "Sword ability - radius hightlight map", swordAbilityMap.get("radius_highlight_particle"));
+
+                    abilityBuilder = abilityBuilder.successRadiusHighlightEnabled(
+                            CheckUtil.booleanVal(swordID, "Sword ability - successful ability radius hightlight enabled value", map.get("successful-ability-highlight-enabled"), true)
+                    );
+
+                    abilityBuilder = abilityBuilder.successRadiusHighlightColors(
+                            CheckUtil.stringListVal(swordID, "Sword ability - successful ability radius highlight colors", map.get("successful-colors"), List.of("#13eb4c"))
+                    );
+
+                    abilityBuilder = abilityBuilder.failRadiusHighlightEnabled(
+                            CheckUtil.booleanVal(swordID, "Sword ability - fail ability radius hightlight enabled value", map.get("failed-ability-highlight-enabled"), true)
+                    );
+
+                    abilityBuilder = abilityBuilder.failRadiusHighlightColors(
+                            CheckUtil.stringListVal(swordID, "Sword ability - fail ability radius highlight colors", map.get("fail-colors"), List.of("#870000"))
                     );
                 }
             }

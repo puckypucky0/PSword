@@ -2,6 +2,10 @@ package dev.pucky.listeners;
 
 import dev.pucky.PSwordMain;
 import dev.pucky.config.ConfigManager;
+import dev.pucky.particle.Gradient;
+import dev.pucky.particle.ParticleEffect;
+import dev.pucky.particle.ParticleEngine;
+import dev.pucky.particle.Shapes;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbility;
@@ -141,7 +145,29 @@ public class SwordAbilityListener implements Listener {
                     for (Entity affectedEntity : affectedEntities) {
                         if (affectedEntity instanceof LivingEntity living && holderPlayer != living)
                             living.addPotionEffect(ability.enemyEffect());
+                    }
 
+                    if (ability.abilityType() == SwordAbilityType.EFFECT_RADIUS) {
+                        ParticleEffect.ParticleEffectBuilder effectBuilder = ParticleEffect.builder()
+                                .shape(Shapes.circle(radius, 48 * radius, Shapes.Axis.Y))
+                                .origin(holderPlayer::getLocation)
+                                .durationTicks(3);
+
+                        if (fired) {
+                            if (ability.successRadiusHighlightEnabled()) {
+                                effectBuilder.gradient(
+                                        Gradient.of(ability.successRadiusHighlightColors().toArray(String[]::new))
+                                );
+                                ParticleEngine.submit(effectBuilder.build());
+                            }
+                        } else {
+                            if (ability.failRadiusHighlightEnabled()) {
+                                effectBuilder.gradient(
+                                        Gradient.of(ability.failRadiusHighlightColors().toArray(String[]::new))
+                                );
+                                ParticleEngine.submit(effectBuilder.build());
+                            }
+                        }
                     }
                 }
 
@@ -149,13 +175,6 @@ public class SwordAbilityListener implements Listener {
                     fired = true;
                     holderPlayer.addPotionEffect(ability.selfEffect());
                 }
-//                case LIGHTNING_BOLT -> {
-//                    if (victimEntity instanceof LivingEntity living) {
-//                        fired = true;
-//                        victimEntity.getWorld().strikeLightningEffect(victimEntity.getLocation()).setFlashCount(6);
-//                        living.damage(ability.lightningDamage());
-//                    }
-//                }
 
                 case LIGHTNING_BOLT, LIGHTNING_BOLT_RADIUS -> {
                     Integer radius = ability.lightningRadius();
@@ -175,10 +194,12 @@ public class SwordAbilityListener implements Listener {
                             (new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius))) :
                             List.of(victimEntity);
 
-                    if (affectedEntities.size() == 1 && affectedEntities.getFirst().equals(holderPlayer))
+                    if (affectedEntities.size() == 1 && affectedEntities.getFirst().equals(holderPlayer)) {
                         holderPlayer.sendActionBar(
                                 MMUtil.formatColors("<f>Yakında hiç kimse yok!")
                         );
+                        fired = false;
+                    }
 
                     for (Entity affectedEntity : affectedEntities) {
                         if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
@@ -186,6 +207,29 @@ public class SwordAbilityListener implements Listener {
                             living.damage(ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS ?
                                     ability.radiusLightningDamage() :
                                     ability.lightningDamage());
+                        }
+                    }
+
+                    if (ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS) {
+                        ParticleEffect.ParticleEffectBuilder effectBuilder = ParticleEffect.builder()
+                                .shape(Shapes.circle(radius, 48 * radius, Shapes.Axis.Y))
+                                .origin(holderPlayer::getLocation)
+                                .durationTicks(3);
+
+                        if (fired) {
+                            if (ability.successRadiusHighlightEnabled()) {
+                                effectBuilder.gradient(
+                                        Gradient.of(ability.successRadiusHighlightColors().toArray(String[]::new))
+                                );
+                                ParticleEngine.submit(effectBuilder.build());
+                            }
+                        } else {
+                            if (ability.failRadiusHighlightEnabled()) {
+                                effectBuilder.gradient(
+                                        Gradient.of(ability.failRadiusHighlightColors().toArray(String[]::new))
+                                );
+                                ParticleEngine.submit(effectBuilder.build());
+                            }
                         }
                     }
                 }

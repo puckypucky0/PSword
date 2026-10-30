@@ -1,6 +1,5 @@
 package dev.pucky.util;
 
-import dev.pucky.PSwordMain;
 import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.sword.effect.SwordEffectType;
@@ -9,10 +8,11 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class CheckUtil {
@@ -21,7 +21,7 @@ public class CheckUtil {
         if (value instanceof Number n && n.doubleValue() >= 0)
             return n.doubleValue();
 
-        Logger.fail("<red> " + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
+        Logger.fail("<red>" + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
         return def;
     }
 
@@ -29,7 +29,7 @@ public class CheckUtil {
         if (value instanceof Number n && n.intValue() >= 0)
             return n.intValue();
 
-        Logger.fail("<red> " + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
+        Logger.fail("<red>" + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
         return def;
     }
 
@@ -40,8 +40,25 @@ public class CheckUtil {
                 return stripped;
         }
 
-        Logger.fail("<red> " + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
+        Logger.fail("<red>" + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
         return def;
+    }
+
+    public static Boolean booleanVal(String swordID, String keyName, Object value, boolean def) {
+        if (value instanceof Boolean b) {
+            return b;
+        }
+
+        Logger.fail("<red>" + keyName + " is malformed or missing. <white>Using " + def + " for default - " + swordID);
+        return def;
+    }
+
+    public static Map<?, ?> mapVal(String swordID, String keyName, Object value) {
+        if (value instanceof Map<?, ?> map)
+            return map;
+
+        Logger.fail("<red>" + keyName + " is malformed or missing. <white>Using empty map for default - " + swordID);
+        return Map.of();
     }
 
     public static String stringVal(String keyName, Object value) {
@@ -51,8 +68,31 @@ public class CheckUtil {
                 return stripped;
         }
 
-        Logger.fail("<red> " + keyName + " is malformed or missing. This part won't be loaded.");
+        Logger.fail("<red>" + keyName + " is malformed or missing. This part won't be loaded.");
         return null;
+    }
+
+    public static List<String> stringListVal(String swordID, String keyName, Object value, List<String> def) {
+        List<String> list = new ArrayList<>();
+        boolean bool = false;
+
+        if (value instanceof List<?> l) {
+            for (Object o : l) {
+                if (o instanceof String)
+                    list.add((String) o);
+                else bool = true;
+            }
+        }
+
+        if (bool)
+            Logger.fatal("<red>Some of the values of list " + keyName + " isn't String, some values may be missing -- " + swordID);
+
+        if (value == null || list.isEmpty()) {
+            Logger.fatal("<red>" + keyName + " has fallen back to default value.");
+            return def;
+        }
+
+        return list;
     }
 
     public static Sound soundVal(String swordID, Map<?, ?> sectionMap, String defaultSoundKey) {
@@ -76,10 +116,11 @@ public class CheckUtil {
                 && !particleKey.isEmpty()
                 && NamespacedKey.fromString(particleKey) != null
                 && registry.get(NamespacedKey.fromString(particleKey)) != null
-                && registry.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class;
+                && (registry.get(NamespacedKey.fromString(particleKey)).getDataType() == Void.class ||
+                registry.get(NamespacedKey.fromString(particleKey)).getDataType() == Particle.DustOptions.class);
 
         if (!particleKeyCheck)
-            Logger.fail("<red>Particle key is malformed, missing or parameterized, which is not supported by now. [" + swordID + "] Will use <white>" + defaultParticleKey + " for default.");
+            Logger.fail("<red>Particle key is malformed, missing or parameterized, which is not supported by now except dust. [" + swordID + "] Will use <white>" + defaultParticleKey + " for default.");
 
         return particleKeyCheck ?
                 registry.get(NamespacedKey.fromString((String) sectionMap.get("particle_type"))) :

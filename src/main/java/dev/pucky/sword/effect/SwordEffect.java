@@ -15,6 +15,8 @@ public class SwordEffect {
     // Particle
     public Particle particleType;
     public double particleMultiplier;
+    // NEW: Dust particle data
+    public Particle.DustOptions dustOptions;
 
     // Sound
     public Sound sound;

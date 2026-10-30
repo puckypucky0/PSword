@@ -17,7 +17,8 @@
 #
 #  Where to find the keys (use the lowercase id, e.g. "soul", "entity.player.levelup", "speed"):
 #  - Particles      : https://minecraft.wiki/w/Particles
-#                     (particles that need extra data such as dust, block or item are not supported)
+#                     (dust is the only particle with extra data that is supported, see "dust_sword";
+#                      others such as block or item are not supported yet)
 #  - Sounds         : https://minecraft.wiki/w/Sounds.json/Java_Edition_values
 #  - Potion effects : https://minecraft.wiki/w/Effect
 #  - Materials      : https://jd.papermc.io/paper/1.21.4/org/bukkit/Material.html (e.g. DIAMOND_SWORD)
@@ -63,6 +64,21 @@ swords:
         trigger: ON_DAMAGE_DEAL
         particle_type: soul       # https://minecraft.wiki/w/Particles
         multiplier: 1.0           # 1.0 = 25 particles
+
+  "dust_sword":
+    name: "<light_purple>Dust Particle Effect"
+    lore:
+      - "<gray>Effect: <white>PARTICLE (dust)"
+      - "<gray>Colored dust on every hit."
+    material: IRON_SWORD
+    effects:
+      - type: PARTICLE
+        trigger: ON_DAMAGE_DEAL
+        particle_type: dust
+        dust_data:
+          color: "#B9A7F0"        # hex color, always in quotes
+          scale: 1.5              # particle size, max 4.0
+        multiplier: 1.0
 
   "sound_sword":
     name: "<gold>Sound Effect"
@@ -141,6 +157,15 @@ swords:
         duration_seconds: 2
         level: 1
         radius: 5                 # blocks
+        radius_highlight_particle: # A ring of particles shows the radius when the ability is used.
+          successful-ability-highlight-enabled: true # Ability lands on min. 1 entity / player
+          failed-ability-highlight-enabled: true # Ability lands on no one (only possible with RIGHT_CLICK).
+          successful-colors: # Successful particle gradient colors
+            - "#A7E8F0"
+            - "#5BA4CF"
+          fail-colors: # Fail particle gradient colors
+            - "#4d0005"
+            - "#860005"
 
   "lightning_bolt_sword":
     name: "<yellow>Lightning Ability"
@@ -170,6 +195,18 @@ swords:
       - type: LIGHTNING_BOLT_RADIUS
         name: "<yellow>⚡ Lightning"
         trigger: RIGHT_CLICK
+        radius_highlight_particle: # Some circle-shaped particles will appear when some conditions happen.
+          successful-ability-highlight-enabled: true # Ability lands on min. 1 entity / player
+          failed-ability-highlight-enabled: true # Ability lands on no one.
+          successful-colors: # Successful particle gradient colors
+            - "#F2FBFF"
+            - "#A7E8F0"
+            - "#8FB8F2"
+            - "#B9A7F0"
+          fail-colors: # Fail particle gradient colors
+            - "#4d0005"
+            - "#700005"
+            - "#860005"
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
         radius: 3

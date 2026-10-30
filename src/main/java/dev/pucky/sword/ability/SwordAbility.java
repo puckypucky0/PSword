@@ -7,12 +7,20 @@ import lombok.experimental.Accessors;
 import net.kyori.adventure.text.Component;
 import org.bukkit.potion.PotionEffect;
 
+import java.util.List;
+
 @Builder @Getter @Accessors(fluent = true)
 public class SwordAbility {
     private Component abilityName;
     private SwordAbilityType abilityType;
     private Trigger abilityTrigger;
     private int cooldownMillis;
+
+    private boolean successRadiusHighlightEnabled;
+    private boolean failRadiusHighlightEnabled;
+
+    private List<String> successRadiusHighlightColors;
+    private List<String> failRadiusHighlightColors;
 
     // Effect
     private PotionEffect selfEffect;

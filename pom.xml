@@ -6,7 +6,7 @@
 
     <groupId>dev</groupId>
     <artifactId>PSword</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
     <packaging>jar</packaging>
 
     <name>PSword</name>
@@ -55,6 +55,10 @@
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -68,6 +72,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.48</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.puckypucky0</groupId>
+            <artifactId>ParticleEngineLibrary</artifactId>
+            <version>1.1.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

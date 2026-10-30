@@ -5,21 +5,27 @@ lightning that fire on combat triggers such as critical hits and kills. Abilitie
 you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
 Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** stable (v2.1.0). Abilities are new; please report bugs on GitHub.
+> **Status:** stable (v2.2.0). Please report bugs on GitHub.
 
 ## Requirements
 
 - Paper **1.21.4**
 - Java **21**
+- [ParticleEngineLibrary](https://github.com/puckypucky0/ParticleEngineLibrary/releases) **1.1.0** or newer
+  (required since v2.2.0, PSword does not load without it)
 
 ## Installation
 
-1. Download the jar (or build it, see below) and put it in your server's `plugins/` folder.
+1. Download the PSword jar (or build it, see below) and the ParticleEngineLibrary jar, and put both in your server's
+   `plugins/` folder.
 2. Start the server once to generate `plugins/PSword/config.yml`.
 3. Define your swords in the config and run `/psword reload`.
 
 > Updating from v1? `config.yml` is not overwritten on update. Add `abilitiesFireOnPlayersOnly` to `settings` and an
 > `abilities` list to your swords yourself, or delete the old config to get the new default one.
+>
+> Updating from v2.1? Your config keeps working. `dust_data` and `radius_highlight_particle` (see below) are new and
+> optional. Without `radius_highlight_particle`, radius abilities show a green / red ring by default.
 
 ## Commands & Permissions
 
@@ -49,7 +55,7 @@ settings:
 
   effectShowOnPlayersOnly: true
   abilitiesFireOnPlayersOnly: true
-  
+  # In its name.
 
   rightClickIgnoreInteractables: true
   # If true, a player with sword that has a right click trigger ability won't be able to use
@@ -72,6 +78,21 @@ swords:
         trigger: ON_DAMAGE_DEAL
         particle_type: soul       # https://minecraft.wiki/w/Particles
         multiplier: 1.0           # 1.0 = 25 particles
+
+  "dust_sword":
+    name: "<light_purple>Dust Particle Effect"
+    lore:
+      - "<gray>Effect: <white>PARTICLE (dust)"
+      - "<gray>Colored dust on every hit."
+    material: IRON_SWORD
+    effects:
+      - type: PARTICLE
+        trigger: ON_DAMAGE_DEAL
+        particle_type: dust
+        dust_data:
+          color: "#B9A7F0"        # hex color, always in quotes
+          scale: 1.5              # particle size, max 4.0
+        multiplier: 1.0
 
   "sound_sword":
     name: "<gold>Sound Effect"
@@ -150,6 +171,15 @@ swords:
         duration_seconds: 2
         level: 1
         radius: 5                 # blocks
+        radius_highlight_particle: # A ring of particles shows the radius when the ability is used.
+          successful-ability-highlight-enabled: true # Ability lands on min. 1 entity / player
+          failed-ability-highlight-enabled: true # Ability lands on no one (only possible with RIGHT_CLICK).
+          successful-colors: # Successful particle gradient colors
+            - "#A7E8F0"
+            - "#5BA4CF"
+          fail-colors: # Fail particle gradient colors
+            - "#4d0005"
+            - "#860005"
 
   "lightning_bolt_sword":
     name: "<yellow>Lightning Ability"
@@ -165,6 +195,7 @@ swords:
         trigger: ON_HIT_CRIT
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
+
   "lightning_bolt_radius_sword":
     name: "<yellow>Radius Lightning Ability"
     lore:
@@ -178,6 +209,18 @@ swords:
       - type: LIGHTNING_BOLT_RADIUS
         name: "<yellow>⚡ Lightning"
         trigger: RIGHT_CLICK
+        radius_highlight_particle: # Some circle-shaped particles will appear when some conditions happen.
+          successful-ability-highlight-enabled: true # Ability lands on min. 1 entity / player
+          failed-ability-highlight-enabled: true # Ability lands on no one.
+          successful-colors: # Successful particle gradient colors
+            - "#F2FBFF"
+            - "#A7E8F0"
+            - "#8FB8F2"
+            - "#B9A7F0"
+          fail-colors: # Fail particle gradient colors
+            - "#4d0005"
+            - "#700005"
+            - "#860005"
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
         radius: 3
@@ -237,9 +280,16 @@ swords:
 
 | Type | Options |
 |---|---|
-| `PARTICLE` | `particle_type` ([list](https://minecraft.wiki/w/Particles)), `multiplier` (particle amount). Particles that need extra data (`dust`, `block`, `item`) are not supported yet. |
+| `PARTICLE` | `particle_type` ([list](https://minecraft.wiki/w/Particles)), `multiplier` (particle amount). `dust` also takes `dust_data` (see below). Other particles that need extra data (`block`, `item`) are not supported yet. |
 | `SOUND` | `sound` ([list](https://minecraft.wiki/w/Sounds.json/Java_Edition_values)), `volume`, `pitch` |
 | `LIGHTNING` | none, visual only (deals no damage) |
+
+`dust_data` for `particle_type: dust`:
+
+| Option  | Description                                                                         |
+|---------|-------------------------------------------------------------------------------------|
+| `color` | Hex color such as `"#B9A7F0"`. Always quote it, an unquoted `#` starts a YAML comment. Default `#f0f0f0`. |
+| `scale` | Particle size, up to `4.0`. Default `2.0`.                                           |
 
 ### Ability types
 
@@ -266,8 +316,18 @@ Potion options:
 - `duration_seconds`: how long the effect lasts.
 - `level`: `1` = level I, `2` = level II, and so on.
 
+Radius highlight (`EFFECT_RADIUS` and `LIGHTNING_BOLT_RADIUS`): a ring of particles shows the radius when the ability
+is used. Set it under `radius_highlight_particle`:
+
+| Option                                 | Description                                                                 |
+|----------------------------------------|-----------------------------------------------------------------------------|
+| `successful-ability-highlight-enabled` | Show the ring when the ability hits at least one entity. Default `true`.    |
+| `failed-ability-highlight-enabled`     | Show the ring when nobody is in range (only possible with `RIGHT_CLICK`). Default `true`. |
+| `successful-colors`                    | List of hex colors, blended as a gradient. Default `["#13eb4c"]`.           |
+| `fail-colors`                          | List of hex colors, blended as a gradient. Default `["#870000"]`.           |
+
 While at least one ability of the held sword is on cooldown, the action bar shows every running cooldown with its name
-and the remaining seconds.
+and the remaining seconds. When a cooldown ends, a short subtitle and a sound tell you the ability is ready again.
 
 ### Triggers
 
@@ -294,7 +354,7 @@ skipped) instead of crashing the plugin.
 mvn clean package
 ```
 
-The jar is created in `target/`.
+The jar is created in `target/`. ParticleEngineLibrary is pulled from JitPack automatically.
 
 ## License
 

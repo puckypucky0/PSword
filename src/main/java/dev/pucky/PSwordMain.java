@@ -11,8 +11,10 @@ import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.util.MMUtil;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,6 +24,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 
@@ -68,6 +71,7 @@ public final class PSwordMain extends JavaPlugin implements Listener {
                 PSword sword = configManager.getSword(swordKey).swordInstance();
 
                 Component component = MMUtil.deserialize("| ");
+
                 for (SwordAbility ability : sword.swordAbilities()) {
                     SwordAbilityListener.CooldownKey cooldownKey = new SwordAbilityListener.CooldownKey(onlinePlayer.getUniqueId(), ability);
                     Map<SwordAbilityListener.CooldownKey, Long> cooldowns = abilityListener.getCooldowns();
@@ -81,7 +85,19 @@ public final class PSwordMain extends JavaPlugin implements Listener {
                                     component.append(ability.abilityName())
                                             .append(MMUtil.deserialize(" "))
                                             .append(MMUtil.deserialize(secondsLeft));
-                        else cooldowns.remove(cooldownKey);
+                        else {
+                            cooldowns.remove(cooldownKey);
+                            onlinePlayer.showTitle(Title.title(
+                                    MMUtil.EMPTY_COMPONENT,
+                                    MMUtil.formatColors(MMUtil.serialize(ability.abilityName()) + " <s>tekrar kullanılabilir! ✔"),
+                                    Title.Times.times(
+                                            Duration.ofMillis(500),
+                                            Duration.ofMillis(1000),
+                                            Duration.ofMillis(250)
+                                    )
+                            ));
+                            onlinePlayer.playSound(onlinePlayer, Sound.ENTITY_PLAYER_LEVELUP, 1, 1.4f);
+                        }
                     }
                 }
 

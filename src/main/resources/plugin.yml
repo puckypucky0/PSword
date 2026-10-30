@@ -1,6 +1,7 @@
 name: PSword
 version: '${version}'
 main: dev.pucky.PSwordMain
+depend: ["ParticleEngineLibrary"]
 commands:
   psword:
     description: PSword ana komutu

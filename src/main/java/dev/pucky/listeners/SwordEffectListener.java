@@ -84,7 +84,8 @@ public class SwordEffectListener implements Listener {
                     configManager.getParticleOffsetX(),
                     configManager.getParticleOffsetY(),
                     configManager.getParticleOffsetZ(),
-                    configManager.getParticleOffsetExtra()
+                    configManager.getParticleOffsetExtra(),
+                    effect.dustOptions // May be null
             );
         }
     }
