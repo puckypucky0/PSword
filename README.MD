@@ -5,7 +5,7 @@ lightning that fire on combat triggers such as critical hits and kills. Abilitie
 you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
 Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** stable (v2.2.0). Please report bugs on GitHub.
+> **Status:** stable (v2.3.0). Please report bugs on GitHub.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ Swords are defined in `config.yml` and handed out with a command.
 - Java **21**
 - [ParticleEngineLibrary](https://github.com/puckypucky0/ParticleEngineLibrary/releases) **1.1.0** or newer
   (required since v2.2.0, PSword does not load without it)
-- [WorldGuard](https://enginehub.org/worldguard) (optional, see [WorldGuard](#worldguard))
+- [WorldGuard](https://enginehub.org/worldguard) (optional since v2.3.0, see [WorldGuard](#worldguard))
 
 ## Installation
 
@@ -27,6 +27,8 @@ Swords are defined in `config.yml` and handed out with a command.
 >
 > Updating from v2.1? Your config keeps working. `dust_data` and `radius_highlight_particle` (see below) are new and
 > optional. Without `radius_highlight_particle`, radius abilities show a green / red ring by default.
+>
+> Updating from v2.2? Nothing to change in your config. The `psword` flag is only added when WorldGuard is installed.
 
 ## Commands & Permissions
 
@@ -48,6 +50,7 @@ abilities in a region:
 
 The flag is checked at the target's location, or at the sword holder's location when there is no target. Radius
 abilities check every target on their own, so players inside the region are skipped and the rest are still affected.
+When an ability is blocked, its radius ring turns red, the holder sees a message and the cooldown does not start.
 
 Players with WorldGuard's region bypass permission, which includes operators by default, may not be blocked. Test with
 a non-operator account.
