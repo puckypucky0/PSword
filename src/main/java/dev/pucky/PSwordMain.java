@@ -9,10 +9,13 @@ import dev.pucky.listeners.SwordEffectListener;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.util.MMUtil;
+import dev.pucky.util.hook.WorldGuardHook;
+import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -39,6 +42,18 @@ public final class PSwordMain extends JavaPlugin implements Listener {
     private SwordEffectListener effectListener;
 
     private BukkitTask abilityCooldownTask;
+
+    private boolean hookedWorldGuard;
+
+    @Override
+    public void onLoad() {
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            Logger.inform("<green>Trying to hook into WorldGuard.");
+            WorldGuardHook.register();
+
+            hookedWorldGuard = true;
+        } else Logger.inform("No WorldGuard detected, skipping custom flag hook.");
+    }
 
     @Override
     public void onEnable() {
@@ -116,5 +131,9 @@ public final class PSwordMain extends JavaPlugin implements Listener {
     public void onDisable() {
         if (this.abilityCooldownTask != null)
             this.abilityCooldownTask.cancel();
+    }
+
+    public boolean canUse(Player player, Location location) {
+        return !this.hookedWorldGuard || WorldGuardHook.canUse(player, location);
     }
 }

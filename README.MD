@@ -13,6 +13,7 @@ Swords are defined in `config.yml` and handed out with a command.
 - Java **21**
 - [ParticleEngineLibrary](https://github.com/puckypucky0/ParticleEngineLibrary/releases) **1.1.0** or newer
   (required since v2.2.0, PSword does not load without it)
+- [WorldGuard](https://enginehub.org/worldguard) (optional, see [WorldGuard](#worldguard))
 
 ## Installation
 
@@ -35,6 +36,21 @@ Swords are defined in `config.yml` and handed out with a command.
 | `/psword reload` | Reloads the configuration and resets all cooldowns | `psword.reload` |
 
 `/ps` is an alias for `/psword`. Using the root command requires `psword.use`.
+
+## WorldGuard
+
+With WorldGuard installed, PSword adds the `psword` flag. It is allowed by default. Deny it to turn off effects and
+abilities in a region:
+
+```
+/rg flag spawn psword deny
+```
+
+The flag is checked at the target's location, or at the sword holder's location when there is no target. Radius
+abilities check every target on their own, so players inside the region are skipped and the rest are still affected.
+
+Players with WorldGuard's region bypass permission, which includes operators by default, may not be blocked. Test with
+a non-operator account.
 
 ## Default Configuration
 

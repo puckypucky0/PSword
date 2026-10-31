@@ -58,15 +58,17 @@ public class SwordEffectListener implements Listener {
     }
 
     public void handleSwordEffect(Player holder, Trigger trigger, Location location) {
-        for (ConfigManager.Sword swordValue : configManager.getSwords().values()) {
-            PSword sword = swordValue.swordInstance();
-            ItemStack mainItem = holder.getInventory().getItemInMainHand();
-            String swordKey = mainItem.getPersistentDataContainer().get(new NamespacedKey(PSwordMain.instance, "psword_id"), PersistentDataType.STRING);
+        if (PSwordMain.instance.canUse(holder, location)) {
+            for (ConfigManager.Sword swordValue : configManager.getSwords().values()) {
+                PSword sword = swordValue.swordInstance();
+                ItemStack mainItem = holder.getInventory().getItemInMainHand();
+                String swordKey = mainItem.getPersistentDataContainer().get(new NamespacedKey(PSwordMain.instance, "psword_id"), PersistentDataType.STRING);
 
-            if (Objects.equals(swordKey, swordValue.swordInstance().swordID())) { // Found sword
-                for (SwordEffect effect : sword.swordEffects()) {
-                    if (effect.effectTrigger == trigger)
-                        this.handleSwordEffectSpawn(effect, location, location.getWorld());
+                if (Objects.equals(swordKey, swordValue.swordInstance().swordID())) { // Found sword
+                    for (SwordEffect effect : sword.swordEffects()) {
+                        if (effect.effectTrigger == trigger)
+                            this.handleSwordEffectSpawn(effect, location, location.getWorld());
+                    }
                 }
             }
         }

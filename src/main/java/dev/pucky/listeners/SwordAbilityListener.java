@@ -12,6 +12,7 @@ import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.util.MMUtil;
 import lombok.Getter;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -134,17 +135,22 @@ public class SwordAbilityListener implements Listener {
                     else affectedEntities = ability.abilityType() == SwordAbilityType.EFFECT_RADIUS ?
                             (new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius))) :
                             List.of(victimEntity);
-
-                    if (affectedEntities.size() == 1 && affectedEntities.getFirst().equals(holderPlayer)) {
-                        holderPlayer.sendActionBar(
-                                MMUtil.formatColors("<f>Yakında hiç kimse yok!")
-                        );
-                        fired = false;
+                    int affected = 0;
+                    boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
+                    for (Entity affectedEntity : affectedEntities) {
+                        if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
+                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                                living.addPotionEffect(ability.enemyEffect());
+                                affected++;
+                            } else blocked = true;
+                        }
                     }
 
-                    for (Entity affectedEntity : affectedEntities) {
-                        if (affectedEntity instanceof LivingEntity living && holderPlayer != living)
-                            living.addPotionEffect(ability.enemyEffect());
+                    if (affected == 0) {
+                        holderPlayer.sendActionBar(
+                                MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+                        );
+                        fired = false;
                     }
 
                     if (ability.abilityType() == SwordAbilityType.EFFECT_RADIUS) {
@@ -172,6 +178,10 @@ public class SwordAbilityListener implements Listener {
                 }
 
                 case EFFECT_SELF -> {
+                    Location checkLocation = victimEntity != null ? victimEntity.getLocation() : holderPlayer.getLocation();
+                    if (!PSwordMain.instance.canUse(holderPlayer, checkLocation))
+                        return;
+
                     fired = true;
                     holderPlayer.addPotionEffect(ability.selfEffect());
                 }
@@ -194,20 +204,25 @@ public class SwordAbilityListener implements Listener {
                             (new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius))) :
                             List.of(victimEntity);
 
-                    if (affectedEntities.size() == 1 && affectedEntities.getFirst().equals(holderPlayer)) {
-                        holderPlayer.sendActionBar(
-                                MMUtil.formatColors("<f>Yakında hiç kimse yok!")
-                        );
-                        fired = false;
-                    }
-
+                    int affected = 0;
+                    boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
                     for (Entity affectedEntity : affectedEntities) {
                         if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
-                            holderPlayer.getWorld().strikeLightningEffect(affectedEntity.getLocation()).setFlashCount(6);
-                            living.damage(ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS ?
-                                    ability.radiusLightningDamage() :
-                                    ability.lightningDamage());
+                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                                holderPlayer.getWorld().strikeLightningEffect(affectedEntity.getLocation()).setFlashCount(6);
+                                living.damage(ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS ?
+                                        ability.radiusLightningDamage() :
+                                        ability.lightningDamage());
+                                affected++;
+                            } else blocked = true;
                         }
+                    }
+
+                    if (affected == 0) {
+                        holderPlayer.sendActionBar(
+                                MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+                        );
+                        fired = false;
                     }
 
                     if (ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS) {
