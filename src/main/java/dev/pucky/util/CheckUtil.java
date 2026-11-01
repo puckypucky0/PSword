@@ -65,7 +65,7 @@ public class CheckUtil {
         if (value instanceof String s) {
             String stripped = MMUtil.stripLegacy(s);
             if (!stripped.isBlank())
-                return stripped;
+                return s;
         }
 
         Logger.fail("<red>" + keyName + " is malformed or missing. This part won't be loaded.");

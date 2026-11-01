@@ -5,7 +5,7 @@ lightning that fire on combat triggers such as critical hits and kills. Abilitie
 you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
 Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** stable (v2.3.0). Please report bugs on GitHub.
+> **Status:** stable (v2.3.1). Please report bugs on GitHub.
 
 ## Requirements
 
@@ -29,6 +29,9 @@ Swords are defined in `config.yml` and handed out with a command.
 > optional. Without `radius_highlight_particle`, radius abilities show a green / red ring by default.
 >
 > Updating from v2.2? Nothing to change in your config. The `psword` flag is only added when WorldGuard is installed.
+>
+> Updating from v2.3.0? Nothing to change in your config. Legacy color codes in existing names and lore now show as
+> colors.
 
 ## Commands & Permissions
 
@@ -295,6 +298,21 @@ swords:
         level: 1
 ```
 
+### Colors
+
+Sword `name` and `lore` and ability `name` support [MiniMessage](https://docs.advntr.dev/minimessage/format.html) and
+legacy color codes. Both can be used in the same line:
+
+| Format | Example |
+|---|---|
+| MiniMessage | `<gradient:#BB5444:#214452>Sword</gradient>` |
+| Legacy (`&` or `§`) | `&a`, `&l`, `§c` |
+| Hex | `&#FFAA00` |
+| Spigot hex | `&x&F&F&A&A&0&0` |
+
+As in vanilla, a legacy color resets the formatting before it: `&a&l` is bold green, but `&l&a` is only green. A legacy
+color also closes any MiniMessage tag still open at that point.
+
 ### Effect types
 
 | Type | Options |
@@ -324,7 +342,7 @@ Every ability also needs:
 
 | Option            | Description                                                                                                                            |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| `name`            | **Required.** Shown on the action bar while the ability is on cooldown. Supports MiniMessage. Abilities without a name are not loaded. |
+| `name`            | **Required.** Shown on the action bar while the ability is on cooldown. Supports MiniMessage and legacy color codes. Abilities without a name are not loaded. |
 | `trigger`         | When the ability fires (see [Triggers](#triggers)).                                                                                    |
 | `cooldown_millis` | Cooldown in milliseconds (`1500` = 1.5 seconds). Each ability has its own cooldown per player.                                         |
 
@@ -344,6 +362,9 @@ is used. Set it under `radius_highlight_particle`:
 | `failed-ability-highlight-enabled`     | Show the ring when nobody is in range (only possible with `RIGHT_CLICK`). Default `true`. |
 | `successful-colors`                    | List of hex colors, blended as a gradient. Default `["#13eb4c"]`.           |
 | `fail-colors`                          | List of hex colors, blended as a gradient. Default `["#870000"]`.           |
+
+Abilities skip Shopkeepers NPCs, so they cannot be targeted and right clicking one with a sword does not fire a
+`RIGHT_CLICK` ability.
 
 While at least one ability of the held sword is on cooldown, the action bar shows every running cooldown with its name
 and the remaining seconds. When a cooldown ends, a short subtitle and a sound tell you the ability is ready again.

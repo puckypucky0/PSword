@@ -68,8 +68,8 @@ public final class ConfigManager {
             ConfigurationSection perSwordSection = section.getConfigurationSection(swordID);
             if (perSwordSection == null) continue;
 
-            Component swordName = MMUtil.deserialize(perSwordSection.getString("name", ""));
-            List<Component> swordLore = MMUtil.deserialize(perSwordSection.getStringList("lore"));
+            Component swordName = MMUtil.deserialize(MMUtil.legacyToMini(perSwordSection.getString("name", "")));
+            List<Component> swordLore = MMUtil.deserialize(MMUtil.legacyToMini(perSwordSection.getStringList("lore")));
 
             String swordMaterialString = perSwordSection.getString("material");
             if (swordMaterialString == null) {
@@ -189,7 +189,7 @@ public final class ConfigManager {
                 continue;
 
             SwordAbility.SwordAbilityBuilder abilityBuilder = SwordAbility.builder()
-                    .abilityName(MMUtil.deserialize(abilityName))
+                    .abilityName(MMUtil.deserialize(MMUtil.legacyToMini(abilityName)))
                     .abilityType(abilityType)
                     .abilityTrigger(abilityTrigger)
                     .cooldownMillis(abilityCooldown);
