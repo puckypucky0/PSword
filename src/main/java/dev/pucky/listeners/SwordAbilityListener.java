@@ -11,6 +11,7 @@ import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.util.MMUtil;
+import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -139,7 +140,7 @@ public class SwordAbilityListener implements Listener {
                     boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
                     for (Entity affectedEntity : affectedEntities) {
                         if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
-                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation()) && !living.hasMetadata("shopkeeper")) {
                                 living.addPotionEffect(ability.enemyEffect());
                                 affected++;
                             } else blocked = true;
