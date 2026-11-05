@@ -40,7 +40,13 @@ public class SwordAbility {
     // Blink
     private double blinkRange;
 
-    // Dash
-    private double dashRange;
+    // Pull, Wind Burst and Dash
+    private double strength;
 
+    private int pullRadius;
+    private int windBurstRadius;
+
+    // Elytra lock
+    private long durationMillis;
+    private int elytraLockRadius;
 }

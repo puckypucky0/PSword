@@ -2,10 +2,13 @@
 
 A Paper plugin that gives swords their own **effects** and **abilities**. Effects are visual: particles, sounds and
 lightning that fire on combat triggers such as critical hits and kills. Abilities change the fight: potion effects on
-you, your target or everyone around you, and lightning bolts that deal extra damage, each with its own cooldown.
-Swords are defined in `config.yml` and handed out with a command.
+you, your target or everyone around you, lightning bolts that deal extra damage, pulling, pushing, dashing and locking
+elytras, each with its own cooldown. Swords are defined in `config.yml` and handed out with a command.
 
-> **Status:** stable (v2.3.1). Please report bugs on GitHub.
+> **Status:** stable (v2.4.0). Please report bugs on GitHub.
+
+**Config generator:** build swords with a live in-game preview at [psword.pucky.dev](https://psword.pucky.dev) and copy
+the result into your `config.yml`.
 
 ## Requirements
 
@@ -32,6 +35,9 @@ Swords are defined in `config.yml` and handed out with a command.
 >
 > Updating from v2.3.0? Nothing to change in your config. Legacy color codes in existing names and lore now show as
 > colors.
+>
+> Updating from v2.3.1? Nothing to change in your config. `PULL`, `WIND_BURST`, `DASH` and `ELYTRA_LOCK` are new
+> ability types, see the new example swords below.
 
 ## Commands & Permissions
 
@@ -143,6 +149,7 @@ swords:
   # ===================== ABILITIES (gameplay) =====================
   # Every ability needs: type, name (shown on the action bar while on cooldown), trigger and cooldown_millis.
   # Potion abilities: effect_type (https://minecraft.wiki/w/Effect), duration_seconds, level (1 = I, 2 = II ...)
+  # Movement abilities (PULL, WIND_BURST, DASH): strength (max 5.0)
 
   "self_effect_sword":
     name: "<green>Speed Ability"
@@ -247,6 +254,78 @@ swords:
         lightning_damage: 4.0     # 1 heart = 2 damage
         radius: 3
 
+  "wind_burst_sword":
+    name: "<aqua>Wind Burst Ability"
+    lore:
+      - "<gray>Ability: <white>WIND_BURST"
+      - "<gray>Right click blows everyone"
+      - "<gray>within 4 blocks away from you."
+      - "<dark_gray>Cooldown: 15s"
+    material: DIAMOND_SWORD
+    abilities:
+      - type: WIND_BURST
+        name: "<aqua>Wind Burst"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        strength: 1.5             # push power, max 5.0
+        radius: 4                 # blocks
+        radius_highlight_particle:
+          successful-ability-highlight-enabled: true
+          failed-ability-highlight-enabled: true
+          successful-colors:
+            - "#F2FBFF"
+            - "#A7E8F0"
+          fail-colors:
+            - "#4d0005"
+            - "#860005"
+
+  "pull_sword":
+    name: "<light_purple>Pull Ability"
+    lore:
+      - "<gray>Ability: <white>PULL"
+      - "<gray>Right click pulls everyone"
+      - "<gray>within 4 blocks towards you."
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: PULL
+        name: "<light_purple>Pull"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        strength: 1.5             # pull power, max 5.0 (farther targets are pulled harder)
+        radius: 4                 # blocks
+
+  "dash_sword":
+    name: "<white>Dash Ability"
+    lore:
+      - "<gray>Ability: <white>DASH"
+      - "<gray>Right click dashes you"
+      - "<gray>where you are looking."
+      - "<dark_gray>Cooldown: 8s"
+    material: IRON_SWORD
+    abilities:
+      - type: DASH
+        name: "<white>Dash"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 8000
+        strength: 1.5             # dash power, max 5.0
+
+  "elytra_lock_sword":
+    name: "<gray>Elytra Lock Ability"
+    lore:
+      - "<gray>Ability: <white>ELYTRA_LOCK"
+      - "<gray>Right click disables the elytra of every"
+      - "<gray>player within 5 blocks for 5s."
+      - "<dark_gray>Cooldown: 30s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: ELYTRA_LOCK
+        name: "<gray>Elytra Lock"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 30000
+        duration_seconds: 5       # whole seconds
+        radius: 5                 # blocks
+
   # ===================== EVERYTHING TOGETHER =====================
 
   "showcase_sword":
@@ -337,6 +416,13 @@ color also closes any MiniMessage tag still open at that point.
 | `EFFECT_RADIUS`         | Gives **everyone around you** (except you) a potion effect                          | `effect_type`, `duration_seconds`, `level`, `radius` (blocks, default `5`) |
 | `LIGHTNING_BOLT`        | Strikes the target with lightning that deals extra damage                           | `lightning_damage` (1 heart = 2 damage)                                    |
 | `LIGHTNING_BOLT_RADIUS` | Strikes **everyone around you** (except you) with lightning that deals extra damage | `lightning_damage` (1 heart = 2 damage), `radius` (blocks, default `3`)    |
+| `PULL`                  | Pulls **everyone around you** towards you; farther targets are pulled harder       | `strength` (default `1.5`), `radius` (blocks, default `4`)                 |
+| `WIND_BURST`            | Pushes **everyone around you** away from you                                        | `strength` (default `1.5`), `radius` (blocks, default `4`)                 |
+| `DASH`                  | Dashes **you** where you are looking; the upward boost is limited                   | `strength` (default `1.5`)                                                 |
+| `ELYTRA_LOCK`           | Knocks **players around you** out of gliding and stops them from gliding again      | `duration_seconds` (whole seconds, default `5`), `radius` (blocks, default `4`) |
+
+`strength` must be above `0` and at most `5.0`; other values are logged and replaced with `1.5`. `ELYTRA_LOCK` only
+affects players.
 
 Every ability also needs:
 
@@ -353,8 +439,8 @@ Potion options:
 - `duration_seconds`: how long the effect lasts.
 - `level`: `1` = level I, `2` = level II, and so on.
 
-Radius highlight (`EFFECT_RADIUS` and `LIGHTNING_BOLT_RADIUS`): a ring of particles shows the radius when the ability
-is used. Set it under `radius_highlight_particle`:
+Radius highlight (`EFFECT_RADIUS`, `LIGHTNING_BOLT_RADIUS`, `PULL`, `WIND_BURST` and `ELYTRA_LOCK`): a ring of
+particles shows the radius when the ability is used. Set it under `radius_highlight_particle`:
 
 | Option                                 | Description                                                                 |
 |----------------------------------------|-----------------------------------------------------------------------------|
@@ -363,8 +449,7 @@ is used. Set it under `radius_highlight_particle`:
 | `successful-colors`                    | List of hex colors, blended as a gradient. Default `["#13eb4c"]`.           |
 | `fail-colors`                          | List of hex colors, blended as a gradient. Default `["#870000"]`.           |
 
-Abilities skip Shopkeepers NPCs, so they cannot be targeted and right clicking one with a sword does not fire a
-`RIGHT_CLICK` ability.
+Abilities skip Shopkeepers NPCs, armor stands and spectators, so they are never affected by an ability.
 
 While at least one ability of the held sword is on cooldown, the action bar shows every running cooldown with its name
 and the remaining seconds. When a cooldown ends, a short subtitle and a sound tell you the ability is ready again.

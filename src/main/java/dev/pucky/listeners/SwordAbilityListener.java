@@ -2,19 +2,20 @@ package dev.pucky.listeners;
 
 import dev.pucky.PSwordMain;
 import dev.pucky.config.ConfigManager;
-import dev.pucky.particle.Gradient;
-import dev.pucky.particle.ParticleEffect;
-import dev.pucky.particle.ParticleEngine;
-import dev.pucky.particle.Shapes;
+import dev.pucky.particle.*;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.util.MMUtil;
+import dev.pucky.util.ParticleUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -22,11 +23,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 
@@ -40,6 +43,8 @@ public class SwordAbilityListener implements Listener {
         this.configManager = configManager;
     }
     public record CooldownKey(UUID player, SwordAbility ability) {}
+    public record ActiveEffectKey(UUID player, SwordAbilityType type) {}
+    private final Map<ActiveEffectKey, Long> activeEffects = new HashMap<>();
 
     @EventHandler(ignoreCancelled = true)
     public void onSwordDamageDealTrigger(EntityDamageByEntityEvent event) {
@@ -95,6 +100,16 @@ public class SwordAbilityListener implements Listener {
 
     }
 
+    @EventHandler(ignoreCancelled = true)
+    public void onGlideToggle(EntityToggleGlideEvent event) {
+        if (event.isGliding() && event.getEntity() instanceof Player player) {
+            if (this.isActive(player.getUniqueId(), SwordAbilityType.ELYTRA_LOCK)) {
+                event.setCancelled(true);
+                player.sendActionBar(MMUtil.formatColors("<f>Elitran devre dışı. Uçamazsın"));
+            }
+        }
+    }
+
     public void handleSwordAbilityFire(Player holder, Trigger trigger, Entity victimEntity) {
         for (ConfigManager.Sword swordValue : configManager.getSwords().values()) {
             PSword sword = swordValue.swordInstance();
@@ -137,14 +152,17 @@ public class SwordAbilityListener implements Listener {
                             (new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius))) :
                             List.of(victimEntity);
                     int affected = 0;
+
                     boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
                     for (Entity affectedEntity : affectedEntities) {
-                        if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
-                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation()) && !living.hasMetadata("shopkeeper")) {
-                                living.addPotionEffect(ability.enemyEffect());
-                                affected++;
-                            } else blocked = true;
-                        }
+                        if (!this.canAffect(holderPlayer, affectedEntity))
+                            continue;
+
+                        if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            LivingEntity living = (LivingEntity) affectedEntity;
+                            living.addPotionEffect(ability.enemyEffect());
+                            affected++;
+                        } else blocked = true;
                     }
 
                     if (affected == 0) {
@@ -155,26 +173,7 @@ public class SwordAbilityListener implements Listener {
                     }
 
                     if (ability.abilityType() == SwordAbilityType.EFFECT_RADIUS) {
-                        ParticleEffect.ParticleEffectBuilder effectBuilder = ParticleEffect.builder()
-                                .shape(Shapes.circle(radius, 48 * radius, Shapes.Axis.Y))
-                                .origin(holderPlayer::getLocation)
-                                .durationTicks(3);
-
-                        if (fired) {
-                            if (ability.successRadiusHighlightEnabled()) {
-                                effectBuilder.gradient(
-                                        Gradient.of(ability.successRadiusHighlightColors().toArray(String[]::new))
-                                );
-                                ParticleEngine.submit(effectBuilder.build());
-                            }
-                        } else {
-                            if (ability.failRadiusHighlightEnabled()) {
-                                effectBuilder.gradient(
-                                        Gradient.of(ability.failRadiusHighlightColors().toArray(String[]::new))
-                                );
-                                ParticleEngine.submit(effectBuilder.build());
-                            }
-                        }
+                        ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
                     }
                 }
 
@@ -208,15 +207,18 @@ public class SwordAbilityListener implements Listener {
                     int affected = 0;
                     boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
                     for (Entity affectedEntity : affectedEntities) {
-                        if (affectedEntity instanceof LivingEntity living && holderPlayer != living) {
-                            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
-                                holderPlayer.getWorld().strikeLightningEffect(affectedEntity.getLocation()).setFlashCount(6);
-                                living.damage(ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS ?
-                                        ability.radiusLightningDamage() :
-                                        ability.lightningDamage());
-                                affected++;
-                            } else blocked = true;
-                        }
+                        if (!this.canAffect(holderPlayer, affectedEntity))
+                            continue;
+
+                        if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            LivingEntity living = (LivingEntity) affectedEntity;
+
+                            holderPlayer.getWorld().strikeLightningEffect(affectedEntity.getLocation()).setFlashCount(6);
+                            living.damage(ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS ?
+                                    ability.radiusLightningDamage() :
+                                    ability.lightningDamage());
+                            affected++;
+                        } else blocked = true;
                     }
 
                     if (affected == 0) {
@@ -227,31 +229,190 @@ public class SwordAbilityListener implements Listener {
                     }
 
                     if (ability.abilityType() == SwordAbilityType.LIGHTNING_BOLT_RADIUS) {
-                        ParticleEffect.ParticleEffectBuilder effectBuilder = ParticleEffect.builder()
-                                .shape(Shapes.circle(radius, 48 * radius, Shapes.Axis.Y))
-                                .origin(holderPlayer::getLocation)
-                                .durationTicks(3);
-
-                        if (fired) {
-                            if (ability.successRadiusHighlightEnabled()) {
-                                effectBuilder.gradient(
-                                        Gradient.of(ability.successRadiusHighlightColors().toArray(String[]::new))
-                                );
-                                ParticleEngine.submit(effectBuilder.build());
-                            }
-                        } else {
-                            if (ability.failRadiusHighlightEnabled()) {
-                                effectBuilder.gradient(
-                                        Gradient.of(ability.failRadiusHighlightColors().toArray(String[]::new))
-                                );
-                                ParticleEngine.submit(effectBuilder.build());
-                            }
-                        }
+                        ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
                     }
+                }
+                case DASH -> {
+                    Vector directionWithStrength = holderPlayer.getLocation().getDirection().multiply(ability.strength());
+                    double currentY = directionWithStrength.getY();
+                    double lastY = Math.clamp(currentY, 0.15, 0.50);
+                    directionWithStrength.setY(lastY);
+
+                    if (PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation())) {
+                        holderPlayer.setVelocity(directionWithStrength);
+                        holderPlayer.playSound(holderPlayer, Sound.ENTITY_BAT_TAKEOFF, 5, 0.9f);
+                        fired = true;
+                    }
+                }
+
+                case WIND_BURST -> {
+                    int radius = ability.windBurstRadius();
+                    double strength = ability.strength();
+                    List<Entity> affectedEntities;
+
+                    fired = true;
+                    if (configManager.isAbilitiesFireOnPlayersOnly())
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyPlayers(radius));
+                    else
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius));
+
+                    int affected = 0;
+                    boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
+
+                    for (Entity affectedEntity : affectedEntities) {
+                        if (!this.canAffect(holderPlayer, affectedEntity))
+                            continue;
+
+                        if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            LivingEntity living = (LivingEntity) affectedEntity;
+
+                            Vector targetVector = living.getLocation().toVector().subtract(holderPlayer.getLocation().toVector());
+                            targetVector.setY(0);
+                            if (targetVector.lengthSquared() == 0) continue;
+
+                            targetVector = targetVector.normalize();
+                            targetVector = targetVector.multiply(strength);
+                            targetVector.setY(0.4);
+
+                            living.setVelocity(targetVector);
+
+                            affected++;
+                        } else blocked = true;
+                    }
+
+                    if (affected == 0) {
+                        holderPlayer.sendActionBar(
+                                MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+                        );
+                        fired = false;
+                    }
+                    ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
+                }
+                case PULL -> {
+                    int radius = ability.pullRadius();
+                    double strength = ability.strength();
+                    List<Entity> affectedEntities;
+
+                    fired = true;
+                    if (configManager.isAbilitiesFireOnPlayersOnly())
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyPlayers(radius));
+                    else
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius));
+
+                    int affected = 0;
+                    boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
+                    boolean holderBlocked = blocked;
+
+                    for (Entity affectedEntity : affectedEntities) {
+                        if (!this.canAffect(holderPlayer, affectedEntity))
+                            continue;
+
+                        if (!holderBlocked && PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            LivingEntity living = (LivingEntity) affectedEntity;
+
+                            Vector targetVector = holderPlayer.getLocation().toVector().subtract(affectedEntity.getLocation().toVector());
+                            targetVector.setY(0);
+                            if (targetVector.lengthSquared() == 0) continue;
+
+                            double distance = targetVector.length();
+                            double speed = Math.min(distance * 0.1 * strength, 2.0);
+
+                            targetVector = targetVector.normalize();
+                            targetVector = targetVector.multiply(speed);
+                            targetVector.setY(0.2);
+
+                            living.setVelocity(targetVector);
+
+                            affected++;
+                        } else blocked = true;
+                    }
+
+                    if (affected == 0) {
+                        holderPlayer.sendActionBar(
+                                MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+                        );
+                        fired = false;
+                    }
+                    ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
+                }
+                case ELYTRA_LOCK -> {
+                    int radius = ability.elytraLockRadius();
+                    long durationMillis = ability.durationMillis();
+
+                    List<Entity> affectedEntities;
+
+                    fired = true;
+                    if (configManager.isAbilitiesFireOnPlayersOnly())
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyPlayers(radius));
+                    else
+                        affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius));
+
+                    int affected = 0;
+                    boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
+
+                    for (Entity affectedEntity : affectedEntities) {
+                        if (!this.canAffect(holderPlayer, affectedEntity))
+                            continue;
+
+                        if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                            LivingEntity living = (LivingEntity) affectedEntity;
+
+                            if (living instanceof Player) {
+                                this.activeEffects.put(new ActiveEffectKey(affectedEntity.getUniqueId(), SwordAbilityType.ELYTRA_LOCK), System.currentTimeMillis() + durationMillis);
+                                living.setGliding(false);
+                                affected++;
+                            }
+                        } else blocked = true;
+                    }
+
+                    if (affected == 0) {
+                        holderPlayer.sendActionBar(
+                                MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+                        );
+                        fired = false;
+                    }
+                    ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
                 }
             }
             if (fired)
                 cooldowns.put(cooldownKey, System.currentTimeMillis());
         }
+    }
+
+    public boolean canAffect(Player holder, Entity victim) {
+        if (!(victim instanceof LivingEntity))
+            return false;
+
+        if (victim == holder)
+            return false;
+
+        if (!victim.isValid())
+            return false;
+
+        if (victim instanceof ArmorStand)
+            return false;
+
+        if (victim.hasMetadata("shopkeeper"))
+            return false;
+
+        if (victim instanceof Player victimPlayer && victimPlayer.getGameMode() == GameMode.SPECTATOR)
+            return false;
+
+        return true;
+    }
+
+    public boolean isActive(UUID uuid, SwordAbilityType abilityType) {
+        ActiveEffectKey key = new ActiveEffectKey(uuid, abilityType);
+        Long millis = activeEffects.get(key);
+
+        if (millis == null)
+            return false;
+
+        if (System.currentTimeMillis() > millis) {
+            activeEffects.remove(key);
+            return false;
+        }
+
+        return true;
     }
 }

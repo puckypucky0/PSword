@@ -9,6 +9,7 @@ import dev.pucky.sword.effect.SwordEffect;
 import dev.pucky.sword.effect.SwordEffectType;
 import dev.pucky.util.CheckUtil;
 import dev.pucky.util.MMUtil;
+import dev.pucky.util.ParticleUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -20,6 +21,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
+
+import static io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.PUSH;
 
 @Getter
 public final class ConfigManager {
@@ -208,25 +211,8 @@ public final class ConfigManager {
                                 null
                     );
 
-                    if (abilityType == SwordAbilityType.EFFECT_RADIUS) {
-                        Map<?, ?> map = CheckUtil.mapVal(swordID, "Sword ability - radius hightlight map", swordAbilityMap.get("radius_highlight_particle"));
-
-                        abilityBuilder = abilityBuilder.successRadiusHighlightEnabled(
-                                CheckUtil.booleanVal(swordID, "Sword ability - successful ability radius hightlight enabled value", map.get("successful-ability-highlight-enabled"), true)
-                        );
-
-                        abilityBuilder = abilityBuilder.successRadiusHighlightColors(
-                                CheckUtil.stringListVal(swordID, "Sword ability - successful ability radius highlight colors", map.get("successful-colors"), List.of("#13eb4c"))
-                        );
-
-                        abilityBuilder = abilityBuilder.failRadiusHighlightEnabled(
-                                CheckUtil.booleanVal(swordID, "Sword ability - fail ability radius hightlight enabled value", map.get("failed-ability-highlight-enabled"), true)
-                        );
-
-                        abilityBuilder = abilityBuilder.failRadiusHighlightColors(
-                                CheckUtil.stringListVal(swordID, "Sword ability - fail ability radius highlight colors", map.get("fail-colors"), List.of("#870000"))
-                        );
-                    }
+                    if (abilityType == SwordAbilityType.EFFECT_RADIUS)
+                        abilityBuilder = this.loadAbilityRadiusCircles(abilityBuilder, swordID, swordAbilityMap);
                 }
 
                 case EFFECT_SELF -> abilityBuilder = abilityBuilder.selfEffect(
@@ -246,22 +232,50 @@ public final class ConfigManager {
                             CheckUtil.intVal(swordID, "Sword ability - lightning bolt radius value", swordAbilityMap.get("radius"), 3)
                     );
 
-                    Map<?, ?> map = CheckUtil.mapVal(swordID, "Sword ability - radius hightlight map", swordAbilityMap.get("radius_highlight_particle"));
+                    abilityBuilder = this.loadAbilityRadiusCircles(abilityBuilder, swordID, swordAbilityMap);
+                }
 
-                    abilityBuilder = abilityBuilder.successRadiusHighlightEnabled(
-                            CheckUtil.booleanVal(swordID, "Sword ability - successful ability radius hightlight enabled value", map.get("successful-ability-highlight-enabled"), true)
-                    );
+                case PULL, WIND_BURST, DASH -> {
+                    String key = "";
+                    switch (abilityType) {
+                        case PULL -> key = "pull";
+                        case WIND_BURST -> key = "wind burst (push)";
+                        case DASH -> key = "dash";
+                    }
 
-                    abilityBuilder = abilityBuilder.successRadiusHighlightColors(
-                            CheckUtil.stringListVal(swordID, "Sword ability - successful ability radius highlight colors", map.get("successful-colors"), List.of("#13eb4c"))
-                    );
+                    double checkedDoubleStrength = CheckUtil.doubleVal(swordID, "Sword ability " + key + " strength value", swordAbilityMap.get("strength"), 1.5);
+                    if (checkedDoubleStrength > 5.0) {
+                        Logger.fail("<red>Sword ability " + key + " strength value is too high (" + checkedDoubleStrength + ") Lowering it to 1.5 - " + swordID);
+                        abilityBuilder = abilityBuilder.strength(1.5);
+                    } else if (checkedDoubleStrength == 0.0) {
+                        Logger.fail("<red>Sword ability " + key + " strength is 0. Defaulting it to 1.5 -" + swordID);
+                        abilityBuilder = abilityBuilder.strength(1.5);
+                    } else abilityBuilder = abilityBuilder.strength(checkedDoubleStrength);
 
-                    abilityBuilder = abilityBuilder.failRadiusHighlightEnabled(
-                            CheckUtil.booleanVal(swordID, "Sword ability - fail ability radius hightlight enabled value", map.get("failed-ability-highlight-enabled"), true)
-                    );
+                    if (abilityType != SwordAbilityType.DASH)
+                        abilityBuilder = this.loadAbilityRadiusCircles(abilityBuilder, swordID, swordAbilityMap);
 
-                    abilityBuilder = abilityBuilder.failRadiusHighlightColors(
-                            CheckUtil.stringListVal(swordID, "Sword ability - fail ability radius highlight colors", map.get("fail-colors"), List.of("#870000"))
+                    if (abilityType == SwordAbilityType.PULL)
+                        abilityBuilder = abilityBuilder.pullRadius(
+                                CheckUtil.intVal(swordID, "Sword ability pull radius value", swordAbilityMap.get("radius"), 4)
+                        );
+
+                    if (abilityType == SwordAbilityType.WIND_BURST)
+                        abilityBuilder = abilityBuilder.windBurstRadius(
+                                CheckUtil.intVal(swordID, "Sword ability wind burst radius value", swordAbilityMap.get("radius"), 4)
+                        );
+                }
+
+                case ELYTRA_LOCK -> {
+                    int checkedDouble = CheckUtil.intVal(swordID, "Sword ability elytra lock ability duration seconds value", swordAbilityMap.get("duration_seconds"), 5);
+                    if (checkedDouble == 0) {
+                        Logger.fail("<red>Sword ability elytra lock duration is 0. Defaulting it to 5 seconds. -" + swordID);
+                        abilityBuilder = abilityBuilder.durationMillis(5000);
+                    } else abilityBuilder = abilityBuilder.durationMillis(checkedDouble * 1000L);
+
+                    abilityBuilder = this.loadAbilityRadiusCircles(abilityBuilder, swordID, swordAbilityMap);
+                    abilityBuilder = abilityBuilder.elytraLockRadius(
+                            CheckUtil.intVal(swordID, "Sword ability - elytra lock radius value", swordAbilityMap.get("radius"), 4)
                     );
                 }
             }
@@ -269,6 +283,27 @@ public final class ConfigManager {
             abilities.add(ability);
         }
         return abilities;
+    }
+
+    public SwordAbility.SwordAbilityBuilder loadAbilityRadiusCircles(SwordAbility.SwordAbilityBuilder abilityBuilder, String swordID, Map<?, ?> swordAbilityMap) {
+        Map<?, ?> map = CheckUtil.mapVal(swordID, "Sword ability - radius hightlight map", swordAbilityMap.get("radius_highlight_particle"));
+        abilityBuilder = abilityBuilder.successRadiusHighlightEnabled(
+                CheckUtil.booleanVal(swordID, "Sword ability - successful ability radius hightlight enabled value", map.get("successful-ability-highlight-enabled"), true)
+        );
+
+        abilityBuilder = abilityBuilder.successRadiusHighlightColors(
+                CheckUtil.stringListVal(swordID, "Sword ability - successful ability radius highlight colors", map.get("successful-colors"), List.of("#13eb4c"))
+        );
+
+        abilityBuilder = abilityBuilder.failRadiusHighlightEnabled(
+                CheckUtil.booleanVal(swordID, "Sword ability - fail ability radius hightlight enabled value", map.get("failed-ability-highlight-enabled"), true)
+        );
+
+        abilityBuilder = abilityBuilder.failRadiusHighlightColors(
+                CheckUtil.stringListVal(swordID, "Sword ability - fail ability radius highlight colors", map.get("fail-colors"), List.of("#870000"))
+        );
+
+        return abilityBuilder;
     }
 
 

@@ -12,7 +12,8 @@
 #  Valid values
 # ---------------------------------------------------------------
 #  Effect types (effects:)  : PARTICLE, SOUND, LIGHTNING
-#  Ability types (abilities:): EFFECT_SELF, EFFECT_SINGLE, EFFECT_RADIUS, LIGHTNING_BOLT, LIGHTNING_BOLT_RADIUS
+#  Ability types (abilities:): EFFECT_SELF, EFFECT_SINGLE, EFFECT_RADIUS, LIGHTNING_BOLT, LIGHTNING_BOLT_RADIUS,
+#                              PULL, WIND_BURST, DASH, ELYTRA_LOCK
 #  Triggers                  : ON_HIT_CRIT, ON_KILL, ON_DAMAGE_DEAL, ON_DAMAGE_RECEIVE, RIGHT_CLICK
 #
 #  Where to find the keys (use the lowercase id, e.g. "soul", "entity.player.levelup", "speed"):
@@ -107,6 +108,7 @@ swords:
   # ===================== ABILITIES (gameplay) =====================
   # Every ability needs: type, name (shown on the action bar while on cooldown), trigger and cooldown_millis.
   # Potion abilities: effect_type (https://minecraft.wiki/w/Effect), duration_seconds, level (1 = I, 2 = II ...)
+  # Movement abilities (PULL, WIND_BURST, DASH): strength (max 5.0)
 
   "self_effect_sword":
     name: "<green>Speed Ability"
@@ -210,6 +212,78 @@ swords:
         cooldown_millis: 15000
         lightning_damage: 4.0     # 1 heart = 2 damage
         radius: 3
+
+  "wind_burst_sword":
+    name: "<aqua>Wind Burst Ability"
+    lore:
+      - "<gray>Ability: <white>WIND_BURST"
+      - "<gray>Right click blows everyone"
+      - "<gray>within 4 blocks away from you."
+      - "<dark_gray>Cooldown: 15s"
+    material: DIAMOND_SWORD
+    abilities:
+      - type: WIND_BURST
+        name: "<aqua>Wind Burst"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        strength: 1.5             # push power, max 5.0
+        radius: 4                 # blocks
+        radius_highlight_particle:
+          successful-ability-highlight-enabled: true
+          failed-ability-highlight-enabled: true
+          successful-colors:
+            - "#F2FBFF"
+            - "#A7E8F0"
+          fail-colors:
+            - "#4d0005"
+            - "#860005"
+
+  "pull_sword":
+    name: "<light_purple>Pull Ability"
+    lore:
+      - "<gray>Ability: <white>PULL"
+      - "<gray>Right click pulls everyone"
+      - "<gray>within 4 blocks towards you."
+      - "<dark_gray>Cooldown: 15s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: PULL
+        name: "<light_purple>Pull"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 15000
+        strength: 1.5             # pull power, max 5.0 (farther targets are pulled harder)
+        radius: 4                 # blocks
+
+  "dash_sword":
+    name: "<white>Dash Ability"
+    lore:
+      - "<gray>Ability: <white>DASH"
+      - "<gray>Right click dashes you"
+      - "<gray>where you are looking."
+      - "<dark_gray>Cooldown: 8s"
+    material: IRON_SWORD
+    abilities:
+      - type: DASH
+        name: "<white>Dash"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 8000
+        strength: 1.5             # dash power, max 5.0
+
+  "elytra_lock_sword":
+    name: "<gray>Elytra Lock Ability"
+    lore:
+      - "<gray>Ability: <white>ELYTRA_LOCK"
+      - "<gray>Right click disables the elytra of every"
+      - "<gray>player within 5 blocks for 5s."
+      - "<dark_gray>Cooldown: 30s"
+    material: NETHERITE_SWORD
+    abilities:
+      - type: ELYTRA_LOCK
+        name: "<gray>Elytra Lock"
+        trigger: RIGHT_CLICK
+        cooldown_millis: 30000
+        duration_seconds: 5       # whole seconds
+        radius: 5                 # blocks
 
   # ===================== EVERYTHING TOGETHER =====================
 

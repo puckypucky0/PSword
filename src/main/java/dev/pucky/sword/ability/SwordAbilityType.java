@@ -5,5 +5,9 @@ public enum SwordAbilityType {
     EFFECT_SINGLE,
     EFFECT_RADIUS,
     LIGHTNING_BOLT,
-    LIGHTNING_BOLT_RADIUS
+    LIGHTNING_BOLT_RADIUS,
+    ELYTRA_LOCK,
+    PULL,
+    WIND_BURST,
+    DASH
 }
