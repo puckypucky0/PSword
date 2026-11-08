@@ -6,6 +6,8 @@ import dev.pucky.particle.ParticleEngine;
 import dev.pucky.particle.Shapes;
 import dev.pucky.sword.ability.SwordAbility;
 import org.bukkit.entity.Player;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
 public class ParticleUtil {
     public static void drawRadiusCircle(int radius, Player holderPlayer, boolean fired, SwordAbility ability) {
@@ -29,5 +31,17 @@ public class ParticleUtil {
                 ParticleEngine.submit(effectBuilder.build());
             }
         }
+    }
+
+    public static void highlightPlayer(Player player) {
+        BoundingBox box = player.getBoundingBox();
+
+        ParticleEngine.submit(ParticleEffect.builder()
+                .shape(Shapes.box(new Vector(box.getWidthX(), box.getHeight(), box.getWidthZ()), 0.15))
+                .origin(() -> player.getBoundingBox().getCenter().toLocation(player.getWorld()))
+                .gradient(Gradient.of("#E0705A", "#FFD27A"))
+                .durationTicks(5)
+                .owner(player)
+                .build());
     }
 }

@@ -9,5 +9,8 @@ public enum SwordAbilityType {
     ELYTRA_LOCK,
     PULL,
     WIND_BURST,
-    DASH
+    DASH,
+    SILENCE,
+    SILENCE_RADIUS,
+    SONIC_BOOM
 }

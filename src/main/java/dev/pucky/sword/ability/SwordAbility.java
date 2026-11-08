@@ -46,7 +46,14 @@ public class SwordAbility {
     private int pullRadius;
     private int windBurstRadius;
 
+
     // Elytra lock
-    private long durationMillis;
     private int elytraLockRadius;
+
+    // Silence (and other abilities in the future)
+    private long durationMillis;
+
+    // Silence
+    private int silenceRadius;
+
 }

@@ -9,7 +9,6 @@ import dev.pucky.sword.effect.SwordEffect;
 import dev.pucky.sword.effect.SwordEffectType;
 import dev.pucky.util.CheckUtil;
 import dev.pucky.util.MMUtil;
-import dev.pucky.util.ParticleUtil;
 import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -21,8 +20,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
-
-import static io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.PUSH;
 
 @Getter
 public final class ConfigManager {
@@ -278,6 +275,20 @@ public final class ConfigManager {
                             CheckUtil.intVal(swordID, "Sword ability - elytra lock radius value", swordAbilityMap.get("radius"), 4)
                     );
                 }
+
+                case SILENCE, SILENCE_RADIUS -> {
+                    int checkedInt = CheckUtil.intVal(swordID, "Sword ability silence ability duration seconds value", swordAbilityMap.get("duration_seconds"), 3);
+                    if (checkedInt == 0) {
+                        Logger.fail("<red>Sword ability silence duration is 0. Defaulting it to 3 seconds. - " + swordID);
+                        abilityBuilder = abilityBuilder.durationMillis(3000);
+                    } else abilityBuilder = abilityBuilder.durationMillis(checkedInt * 1000L);
+
+                    if (abilityType == SwordAbilityType.SILENCE_RADIUS) {
+                        abilityBuilder.silenceRadius(CheckUtil.intVal(swordID, "Sword ability - silence radius value", swordAbilityMap.get("radius"), 5));
+                        abilityBuilder = this.loadAbilityRadiusCircles(abilityBuilder, swordID, swordAbilityMap);
+                    }
+                }
+
             }
             ability = abilityBuilder.build();
             abilities.add(ability);

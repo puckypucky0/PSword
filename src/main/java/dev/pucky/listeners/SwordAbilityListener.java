@@ -2,14 +2,12 @@ package dev.pucky.listeners;
 
 import dev.pucky.PSwordMain;
 import dev.pucky.config.ConfigManager;
-import dev.pucky.particle.*;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.Trigger;
 import dev.pucky.sword.ability.SwordAbility;
 import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.util.MMUtil;
 import dev.pucky.util.ParticleUtil;
-import dev.pucky.util.logs.Logger;
 import lombok.Getter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -32,19 +30,22 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class SwordAbilityListener implements Listener {
     public ConfigManager configManager;
 
     @Getter
     private Map<CooldownKey, Long> cooldowns = new HashMap<>();
+    public record CooldownKey(UUID player, SwordAbility ability) {}
+
+    @Getter
+    private final Map<ActiveEffectKey, Long> activeEffects = new HashMap<>();
+    public record ActiveEffectKey(UUID player, SwordAbilityType type) {}
 
     public SwordAbilityListener(ConfigManager configManager) {
         this.configManager = configManager;
     }
-    public record CooldownKey(UUID player, SwordAbility ability) {}
-    public record ActiveEffectKey(UUID player, SwordAbilityType type) {}
-    private final Map<ActiveEffectKey, Long> activeEffects = new HashMap<>();
 
     @EventHandler(ignoreCancelled = true)
     public void onSwordDamageDealTrigger(EntityDamageByEntityEvent event) {
@@ -132,6 +133,11 @@ public class SwordAbilityListener implements Listener {
         long nextUse = (cooldowns.getOrDefault(cooldownKey, 0L) + ability.cooldownMillis());
         if (nextUse < System.currentTimeMillis()) {
             boolean fired = false;
+
+            if (this.isActive(holderPlayer.getUniqueId(), SwordAbilityType.SILENCE)) {
+                holderPlayer.playSound(holderPlayer.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+                return;
+            }
 
             switch (ability.abilityType()) {
                 case EFFECT_SINGLE, EFFECT_RADIUS -> {
@@ -358,7 +364,7 @@ public class SwordAbilityListener implements Listener {
                             LivingEntity living = (LivingEntity) affectedEntity;
 
                             if (living instanceof Player) {
-                                this.activeEffects.put(new ActiveEffectKey(affectedEntity.getUniqueId(), SwordAbilityType.ELYTRA_LOCK), System.currentTimeMillis() + durationMillis);
+                                this.activeEffects.put(new ActiveEffectKey(affectedEntity.getUniqueId(), ability.abilityType()), System.currentTimeMillis() + durationMillis);
                                 living.setGliding(false);
                                 affected++;
                             }
@@ -373,10 +379,78 @@ public class SwordAbilityListener implements Listener {
                     }
                     ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
                 }
+                case SILENCE -> {
+                    if (victimEntity instanceof Player victimPlayer) {
+                        if (!this.canAffect(holderPlayer, victimPlayer))
+                            return;
+
+                        if (!PSwordMain.instance.canUse(holderPlayer, victimPlayer.getLocation())) {
+                            holderPlayer.sendActionBar(MMUtil.formatColors("<f>Burada kullanamazsın!"));
+                            return;
+                        }
+
+                        this.activeEffects.put(new ActiveEffectKey(victimPlayer.getUniqueId(), SwordAbilityType.SILENCE), System.currentTimeMillis() + ability.durationMillis());
+                        ParticleUtil.highlightPlayer(victimPlayer);
+                        fired = true;
+                    }
+                }
+
+                case SILENCE_RADIUS -> {
+                    fired = this.applyToTargets(ability, ability.silenceRadius(), holderPlayer, (living -> {
+                        if (living instanceof Player victimPlayer) {
+                            this.activeEffects.put(new ActiveEffectKey(living.getUniqueId(), SwordAbilityType.SILENCE), System.currentTimeMillis() + ability.durationMillis());
+                            ParticleUtil.highlightPlayer(victimPlayer);
+                            return true;
+                        } else return false;
+                    }));
+                }
             }
+
             if (fired)
                 cooldowns.put(cooldownKey, System.currentTimeMillis());
         }
+    }
+
+    public List<Entity> nearbyTargets(Player holderPlayer, int radius) {
+        List<Entity> affectedEntities;
+        if (configManager.isAbilitiesFireOnPlayersOnly())
+            affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyPlayers(radius));
+        else
+            affectedEntities = new ArrayList<>(holderPlayer.getLocation().getNearbyEntities(radius, 4.0, radius));
+
+        return affectedEntities;
+    }
+
+    public boolean applyToTargets(SwordAbility ability, int radius, Player holderPlayer, Predicate<LivingEntity> action) {
+        List<Entity> affectedEntities = this.nearbyTargets(holderPlayer, radius);
+        boolean fired = true;
+
+        int affected = 0;
+        boolean blocked = !PSwordMain.instance.canUse(holderPlayer, holderPlayer.getLocation());
+
+        for (Entity affectedEntity : affectedEntities) {
+            if (!this.canAffect(holderPlayer, affectedEntity))
+                continue;
+
+            if (PSwordMain.instance.canUse(holderPlayer, affectedEntity.getLocation())) {
+                LivingEntity living = (LivingEntity) affectedEntity;
+
+                if (action.test(living)) {
+                    affected++;
+                }
+
+            } else blocked = true;
+        }
+
+        if (affected == 0) {
+            holderPlayer.sendActionBar(
+                    MMUtil.formatColors(blocked ? "<f>Burada kullanamazsın!" : "<f>Yakında hiç kimse yok!")
+            );
+            fired = false;
+        }
+        ParticleUtil.drawRadiusCircle(radius, holderPlayer, fired, ability);
+
+        return fired;
     }
 
     public boolean canAffect(Player holder, Entity victim) {

@@ -8,6 +8,7 @@ import dev.pucky.listeners.SwordAbilityListener;
 import dev.pucky.listeners.SwordEffectListener;
 import dev.pucky.sword.PSword;
 import dev.pucky.sword.ability.SwordAbility;
+import dev.pucky.sword.ability.SwordAbilityType;
 import dev.pucky.util.MMUtil;
 import dev.pucky.util.hook.WorldGuardHook;
 import dev.pucky.util.logs.Logger;
@@ -75,8 +76,9 @@ public final class PSwordMain extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         this.abilityCooldownTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
-
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                SwordAbilityListener.ActiveEffectKey silenceKey = new SwordAbilityListener.ActiveEffectKey(onlinePlayer.getUniqueId(), SwordAbilityType.SILENCE);
+                Map<SwordAbilityListener.ActiveEffectKey, Long> silences = abilityListener.getActiveEffects();
                 ItemStack playerSword = onlinePlayer.getInventory().getItemInMainHand();
 
                 String swordKey = playerSword.getPersistentDataContainer()
@@ -86,6 +88,30 @@ public final class PSwordMain extends JavaPlugin implements Listener {
                 PSword sword = configManager.getSword(swordKey).swordInstance();
 
                 Component component = MMUtil.deserialize("| ");
+
+                if (silences.containsKey(silenceKey)) {
+                    long silenceEndsAt = silences.get(silenceKey) - System.currentTimeMillis();
+                    double millis = silenceEndsAt / 1000.0;
+                    String secondsLeft = String.format(Locale.ROOT, "%.1f", millis) + "s | ";
+                    if (millis > 0)
+                        component =
+                                component.append(MMUtil.deserialize("<gray><b>SUSTURULDUN!"))
+                                        .append(MMUtil.deserialize(" "))
+                                        .append(MMUtil.deserialize(secondsLeft));
+                    else {
+                        silences.remove(silenceKey);
+                        onlinePlayer.showTitle(Title.title(
+                                MMUtil.EMPTY_COMPONENT,
+                                MMUtil.formatColors("<f>Artık yetenek kullanabilirsin ✔"),
+                                Title.Times.times(
+                                        Duration.ofMillis(500),
+                                        Duration.ofMillis(1000),
+                                        Duration.ofMillis(250)
+                                )
+                        ));
+                        onlinePlayer.playSound(onlinePlayer, Sound.ENTITY_PLAYER_LEVELUP, 1, 1f);
+                    }
+                }
 
                 for (SwordAbility ability : sword.swordAbilities()) {
                     SwordAbilityListener.CooldownKey cooldownKey = new SwordAbilityListener.CooldownKey(onlinePlayer.getUniqueId(), ability);
