@@ -1,0 +1,104 @@
+name: Modrinth'e yükle
+
+# İki şekilde çalışır:
+# - Yeni bir release yayınlandığında: yalnızca o sürümü Modrinth'e yükler.
+# - Actions sekmesinden elle çalıştırıldığında: Modrinth'te olmayan tüm eski sürümleri,
+#   en eskiden en yeniye doğru yükler. Zaten yüklü olanları atlar.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  modrinth:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+      UA: puckypucky0/PSword (github-actions)
+      GAME_VERSIONS: '["1.21.4"]'
+      LOADERS: '["paper", "purpur"]'
+    steps:
+      - name: Sürümleri Modrinth'e yükle
+        run: |
+          set -euo pipefail
+
+          if [ -z "$MODRINTH_TOKEN" ] || [ -z "$PROJECT_ID" ]; then
+            echo "::error::MODRINTH_TOKEN secret'ı veya MODRINTH_PROJECT_ID değişkeni eksik."
+            exit 1
+          fi
+
+          # Modrinth'te zaten olan sürüm numaraları
+          existing=$(curl -sSf -H "User-Agent: $UA" \
+            "https://api.modrinth.com/v2/project/$PROJECT_ID/version" | jq -r '.[].version_number')
+
+          # Hangi release'ler işlenecek
+          if [ "${{ github.event_name }}" = "release" ]; then
+            gh api "repos/${{ github.repository }}/releases/tags/${{ github.event.release.tag_name }}" > releases.json
+            jq -c '.' releases.json > list.jsonl
+          else
+            gh api "repos/${{ github.repository }}/releases" --paginate --jq '.[]' \
+              | jq -cs 'map(select(.draft == false)) | sort_by(.published_at) | .[]' > list.jsonl
+          fi
+
+          while read -r rel; do
+            tag=$(jq -r '.tag_name' <<<"$rel")
+            ver="${tag#v}"
+
+            if grep -qxF "$ver" <<<"$existing"; then
+              echo "$ver Modrinth'te zaten var, atlanıyor."
+              continue
+            fi
+
+            jar=$(jq -r '[.assets[] | select(.name | endswith(".jar"))][0].name // empty' <<<"$rel")
+            if [ -z "$jar" ]; then
+              echo "::warning::$tag içinde .jar dosyası yok, atlanıyor."
+              continue
+            fi
+
+            case "$ver" in
+              *alpha*) type=alpha ;;
+              *beta*|*rc*) type=beta ;;
+              *) type=release ;;
+            esac
+
+            rm -rf dl && mkdir dl
+            gh release download "$tag" --repo "${{ github.repository }}" --pattern "$jar" --dir dl
+
+            jq -n \
+              --arg name "PSword $ver" \
+              --arg ver "$ver" \
+              --arg changelog "$(jq -r '.body // ""' <<<"$rel")" \
+              --arg type "$type" \
+              --arg project "$PROJECT_ID" \
+              --argjson games "$GAME_VERSIONS" \
+              --argjson loaders "$LOADERS" \
+              '{
+                name: $name,
+                version_number: $ver,
+                changelog: $changelog,
+                version_type: $type,
+                project_id: $project,
+                game_versions: $games,
+                loaders: $loaders,
+                dependencies: [],
+                featured: false,
+                status: "listed",
+                file_parts: ["file"],
+                primary_file: "file"
+              }' > data.json
+
+            echo "$ver yükleniyor ($type)..."
+            curl -sS --fail-with-body -X POST "https://api.modrinth.com/v2/version" \
+              -H "Authorization: $MODRINTH_TOKEN" \
+              -H "User-Agent: $UA" \
+              -F "data=<data.json;type=application/json" \
+              -F "file=@dl/$jar;type=application/java-archive" > /dev/null
+            echo "$ver yüklendi."
+
+            sleep 2
+          done < list.jsonl
